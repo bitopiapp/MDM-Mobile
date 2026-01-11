@@ -1,0 +1,132 @@
+<!--<manifest package="com.uztech.phonelock" xmlns:android="http://schemas.android.com/apk/res/android">-->
+
+<!--    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />-->
+<!--    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />-->
+<!--    <uses-permission android:name="android.permission.WAKE_LOCK" />-->
+
+<!--    <application-->
+<!--        android:allowBackup="true"-->
+<!--        android:label="@string/app_name"-->
+<!--        android:icon="@mipmap/ic_launcher"-->
+<!--        android:roundIcon="@mipmap/ic_launcher"-->
+<!--        android:theme="@style/Theme.PhoneLock">-->
+
+<!--        &lt;!&ndash; Device Admin Receiver &ndash;&gt;-->
+<!--        <receiver-->
+<!--            android:name=".LockDeviceAdminReceiver"-->
+<!--            android:permission="android.permission.BIND_DEVICE_ADMIN"-->
+<!--            android:exported="true">-->
+<!--            <meta-data-->
+<!--                android:name="android.app.device_admin"-->
+<!--                android:resource="@xml/device_admin_receiver" />-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+
+<!--        &lt;!&ndash; Foreground Service &ndash;&gt;-->
+<!--        <service-->
+<!--            android:name=".ScreenMonitorService"-->
+<!--            android:exported="false"-->
+<!--            android:foregroundServiceType="dataSync" />-->
+
+<!--        &lt;!&ndash; Boot Receiver &ndash;&gt;-->
+<!--        <receiver-->
+<!--            android:name=".BootReceiver"-->
+<!--            android:enabled="true"-->
+<!--            android:exported="true">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.BOOT_COMPLETED" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+
+<!--        &lt;!&ndash; Lock Activity &ndash;&gt;-->
+<!--        <activity-->
+<!--            android:name=".LockActivity"-->
+<!--            android:exported="true"-->
+<!--            android:showOnLockScreen="true"-->
+<!--            android:excludeFromRecents="true"-->
+<!--            android:launchMode="singleTask"-->
+<!--            android:taskAffinity=""-->
+<!--            android:turnScreenOn="true" />-->
+
+<!--        &lt;!&ndash; Main Activity &ndash;&gt;-->
+<!--        <activity-->
+<!--            android:name=".MainActivity"-->
+<!--            android:exported="true">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
+
+<!--    </application>-->
+<!--</manifest>-->
+
+
+<manifest package="com.uztech.phonelock" xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Required permissions -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.PhoneLock">
+
+        <!-- Device Admin Receiver -->
+        <receiver
+            android:name=".LockDeviceAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_receiver" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Foreground Service -->
+        <service
+            android:name=".ScreenMonitorService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
+
+        <!-- Boot Receiver -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Lock Activity -->
+        <activity
+            android:name=".LockActivity"
+            android:exported="true"
+            android:showOnLockScreen="true"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:turnScreenOn="true" />
+
+        <!-- Main Activity -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+</manifest>

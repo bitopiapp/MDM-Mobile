@@ -16,6 +16,7 @@ import com.google.firebase.messaging.RemoteMessage
 class MyFirebaseMessagingService : FirebaseMessagingService() {
     val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
     val admin = ComponentName(this, LockDeviceAdminReceiver::class.java)
+    // for ck device
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         // Handle notification payload
         remoteMessage.notification?.let {

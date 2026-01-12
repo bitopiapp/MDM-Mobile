@@ -1,5 +1,5 @@
-package com.uztech.phonelock
-
+//package com.uztech.phonelock
+//
 //import android.app.admin.DevicePolicyManager
 //import android.content.ComponentName
 //import android.content.Context
@@ -46,9 +46,7 @@ package com.uztech.phonelock
 
 
 
-
 //package com.uztech.phonelock
-//
 //import android.app.admin.DevicePolicyManager
 //import android.content.ComponentName
 //import android.content.Context
@@ -103,6 +101,7 @@ package com.uztech.phonelock
 
 
 
+package com.uztech.phonelock
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -122,6 +121,8 @@ class MainActivity : ComponentActivity() {
         val statusText = findViewById<TextView>(R.id.statusText)
         val enableAdminBtn = findViewById<Button>(R.id.enableAdminBtn)
         val startServiceBtn = findViewById<Button>(R.id.startServiceBtn)
+        val lockNowButton = findViewById<Button>(R.id.disableFactoryResetBtn)
+        val pinChangeNowButton = findViewById<Button>(R.id.pinChange)
 
         val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         val admin = ComponentName(this, LockDeviceAdminReceiver::class.java)
@@ -136,6 +137,7 @@ class MainActivity : ComponentActivity() {
 
         // Request device admin activation
         enableAdminBtn.setOnClickListener {
+            print("is clicked ==============----")
             val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
                 putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, admin)
                 putExtra(
@@ -148,14 +150,58 @@ class MainActivity : ComponentActivity() {
 
         // Start foreground service
         startServiceBtn.setOnClickListener {
+            print("is clicked ==============00000")
             val serviceIntent = Intent(this, ScreenMonitorService::class.java)
             startForegroundService(serviceIntent)
+
         }
 
-        // 🔑 Disable factory reset if this app is device owner
-        if (dpm.isDeviceOwnerApp(packageName)) {
-            dpm.addUserRestriction(admin, UserManager.DISALLOW_FACTORY_RESET)
+        // Lock Now Button click to instantly lock the device
+        lockNowButton.setOnClickListener {
+            val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+            val admin = ComponentName(this, LockDeviceAdminReceiver::class.java)
+
+            if (dpm.isAdminActive(admin)) {
+                dpm.lockNow()   // 🔒 Locks the phone instantly
+            } else {
+                println("Device admin not active, please enable it in settings")
+            }
         }
+
+
+        pinChangeNowButton.setOnClickListener {
+            val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+            val admin = ComponentName(this, LockDeviceAdminReceiver::class.java)
+
+            if (dpm.isAdminActive(admin)) {
+                // Change the device PIN to "12345"
+                val success = dpm.resetPassword("12345", 0)
+                if (success) {
+                    println("PIN changed successfully to 12345")
+                    dpm.lockNow()   // 🔒 Immediately lock with new PIN
+                } else {
+                    println("Failed to change PIN")
+                }
+            } else {
+                println("Device admin not active, please enable it in settings")
+            }
+        }
+
+
+
+//        lockNowButton.setOnClickListener {
+//            val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+//            if (dpm.isDeviceOwnerApp(packageName)) {
+//                // 🔒 This locks the entire device immediately
+//                dpm.lockNow()
+//                println("Device locked instantly")
+//            } else {
+//                println("App is not device owner, cannot lock phone")
+//            }
+//        }
+
+
+
 
         refreshStatus()
     }

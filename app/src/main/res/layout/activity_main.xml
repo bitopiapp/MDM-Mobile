@@ -27,4 +27,18 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"/>
 
+    <Button
+        android:id="@+id/disableFactoryResetBtn"
+        android:text="@string/disable_factory_reset_service"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"/>
+
+    <Button
+        android:id="@+id/pinChange"
+        android:text="@string/pin_change"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"/>
+
 </LinearLayout>

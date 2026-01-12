@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "545723807856",
+    "project_id": "locker-app-df892",
+    "storage_bucket": "locker-app-df892.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:545723807856:android:4c513f5abcf57a67251cb5",
+        "android_client_info": {
+          "package_name": "com.uztech.phonelock"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_UdIzyjCmS0S1MCaWk6SLs_KMH9PKIIM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

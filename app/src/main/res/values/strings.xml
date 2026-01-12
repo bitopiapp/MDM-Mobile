@@ -1,4 +1,3 @@
-
 <resources>
     <string name="app_name">phonelock</string>
     <string name="enter_pin">Enter PIN</string>
@@ -12,4 +11,5 @@
     <string name="disable_factory_reset_service">Disable Factory Reset </string>
     <string name="admin_explanation">Enable to allow screen-off lock.</string>
     <string name="pin_change">Pin Change</string>
+    <string name="lockMyPhone">Lock Now</string>
 </resources>

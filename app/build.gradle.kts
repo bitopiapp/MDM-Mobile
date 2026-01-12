@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("com.google.gms.google-services") // Google services plugin
 }
 
 android {
@@ -36,12 +37,21 @@ android {
 }
 
 dependencies {
+    // Firebase BOM (manages versions automatically)
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
 
+    // Firebase services
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging") // 🔑 Required for FCM
+
+    // AndroidX + UI
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -12,4 +12,8 @@
     <string name="admin_explanation">Enable to allow screen-off lock.</string>
     <string name="pin_change">Pin Change</string>
     <string name="lockMyPhone">Lock Now</string>
+    <string name="device_admin_enabled">Device Admin Enabled</string>
+    <string name="device_admin_disabled">Device Admin Disabled</string>
+    <string name="device_locked">Device Locked</string>
+    <string name="features_disabled">All features disabled</string>
 </resources>

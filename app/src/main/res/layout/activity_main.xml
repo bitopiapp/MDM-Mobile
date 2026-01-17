@@ -17,14 +17,7 @@
         android:textStyle="bold"
         android:layout_marginBottom="30dp" />
 
-    <Button
-        android:id="@+id/btnSetDeviceOwner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Set Device Owner"
-        android:layout_marginBottom="10dp"
-        android:padding="10dp"
-        android:textSize="14sp" />
+
 
     <Button
         android:id="@+id/btnEnableAdmin"
@@ -35,14 +28,7 @@
         android:padding="10dp"
         android:textSize="14sp" />
 
-    <Button
-        android:id="@+id/btnLockNow"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Lock Now"
-        android:layout_marginBottom="10dp"
-        android:padding="10dp"
-        android:textSize="14sp" />
+
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -73,16 +59,22 @@
             android:layout_marginStart="5dp"/>
 
     </LinearLayout>
-
     <Button
-        android:id="@+id/btnDisallowAll"
+        android:id="@+id/btnLockTouch"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Disable All Features"
-        android:layout_marginBottom="20dp"
-        android:padding="10dp"
-        android:textSize="14sp"
-        android:backgroundTint="#FF9800" />
+        android:layout_marginBottom="8dp"
+        android:text="Auto Lock (5 Seconds)" />
+
+<!--    <Button-->
+<!--        android:id="@+id/btnDisallowAll"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Disable All Features"-->
+<!--        android:layout_marginBottom="20dp"-->
+<!--        android:padding="10dp"-->
+<!--        android:textSize="14sp"-->
+<!--        android:backgroundTint="#FF9800" />-->
 
     <TextView
         android:id="@+id/tvStatus"

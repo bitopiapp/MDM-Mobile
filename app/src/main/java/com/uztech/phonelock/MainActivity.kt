@@ -252,6 +252,372 @@
 //    }
 //}
 
+ // .........................................Notification ....................//
+
+
+
+//
+//
+//package com.uztech.phonelock
+//
+//import android.Manifest
+//import android.app.Activity
+//import android.app.admin.DevicePolicyManager
+//import android.content.ComponentName
+//import android.content.Context
+//import android.content.Intent
+//import android.content.SharedPreferences
+//import android.content.pm.PackageManager
+//import android.os.Build
+//import android.os.Bundle
+//import android.os.UserManager
+//import android.util.Log
+//import android.widget.Button
+//import android.widget.TextView
+//import android.widget.Toast
+//import androidx.appcompat.app.AppCompatActivity
+//import androidx.core.app.ActivityCompat
+//import androidx.core.content.ContextCompat
+//
+//class MainActivity : AppCompatActivity() {
+//
+//    private lateinit var devicePolicyManager: DevicePolicyManager
+//    private lateinit var componentName: ComponentName
+//    private lateinit var tvStatus: TextView
+//    private lateinit var prefs: SharedPreferences
+//
+//    companion object {
+//        const val REQUEST_CODE_ENABLE_ADMIN = 100
+//        const val REQUEST_CODE_SET_DEVICE_OWNER = 101
+//        const val REQUEST_CODE_NOTIFICATION_PERMISSION = 102
+//        const val PREFS_NAME = "PhoneLockPrefs"
+//        const val KEY_FACTORY_RESET_DISABLED = "factory_reset_disabled"
+//        const val KEY_ALL_FEATURES_DISABLED = "all_features_disabled"
+//        const val KEY_NOTIFICATION_ENABLED = "notification_enabled"
+//        const val KEY_IS_DEVICE_OWNER = "is_device_owner"
+//    }
+//
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        setContentView(R.layout.activity_main)
+//
+//        devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+//        componentName = ComponentName(this, DeviceAdminReceiver::class.java)
+//        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+//
+//        tvStatus = findViewById(R.id.tvStatus)
+//        val btnEnableAdmin = findViewById<Button>(R.id.btnEnableAdmin)// Add this button to your layout
+//        val disableFactoryReset = findViewById<Button>(R.id.disableFactoryReset)
+//        val enableFactoryReset = findViewById<Button>(R.id.enableFactoryReset)
+//
+//        btnEnableAdmin.setOnClickListener { enableDeviceAdmin() }
+//
+//
+//        disableFactoryReset.setOnClickListener {
+//            disableFactoryReset()
+//            lockDeviceNow()
+//        }
+//        enableFactoryReset.setOnClickListener { enableFactoryReset() }
+//
+//        // Start notification on app start if needed
+//        initializeProtection()
+//
+//        updateStatus()
+//    }
+//
+//    private fun initializeProtection() {
+//        // Check if device owner and start notification if needed
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                val notificationEnabled = prefs.getBoolean(KEY_NOTIFICATION_ENABLED, true)
+//                if (notificationEnabled) {
+//                    startProtectionNotification()
+//                }
+//            }
+//        }
+//    }
+//
+//    private fun setDeviceOwner() {
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            if (!devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                try {
+//                    // Check for Android 13+ notification permission
+//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+//                        if (ContextCompat.checkSelfPermission(
+//                                this,
+//                                Manifest.permission.POST_NOTIFICATIONS
+//                            ) != PackageManager.PERMISSION_GRANTED
+//                        ) {
+//                            // Request notification permission
+//                            ActivityCompat.requestPermissions(
+//                                this,
+//                                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+//                                REQUEST_CODE_NOTIFICATION_PERMISSION
+//                            )
+//                            return
+//                        }
+//                    }
+//
+//                    val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+//                    intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
+//                    intent.putExtra(
+//                        DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+//                        "Setting as device owner for complete control"
+//                    )
+//                    startActivityForResult(intent, REQUEST_CODE_SET_DEVICE_OWNER)
+//                } catch (e: Exception) {
+//                    Toast.makeText(
+//                        this,
+//                        "Use adb command:\nadb shell dpm set-device-owner com.uztech.phonelock/.DeviceAdminReceiver",
+//                        Toast.LENGTH_LONG
+//                    ).show()
+//                }
+//            } else {
+//                Toast.makeText(this, "Already device owner", Toast.LENGTH_SHORT).show()
+//                // Start notification immediately if already device owner
+//                startProtectionNotification()
+//            }
+//        }
+//    }
+//
+//    private fun enableDeviceAdmin() {
+//        setDeviceOwner()
+//        if (!devicePolicyManager.isAdminActive(componentName)) {
+//            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+//            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
+//            intent.putExtra(
+//                DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+//                "Device admin permission is required to lock the device and control settings"
+//            )
+//            startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN)
+//        } else {
+//            Toast.makeText(this, "Device admin already enabled", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun lockDeviceNow() {
+//        if (devicePolicyManager.isAdminActive(componentName)) {
+//            devicePolicyManager.lockNow()
+//            Toast.makeText(this, "Device locked", Toast.LENGTH_SHORT).show()
+//        } else {
+//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun disableFactoryReset() {
+//        if (devicePolicyManager.isAdminActive(componentName)) {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                    try {
+//                        // Apply factory reset prevention
+//                        applyFactoryResetRestrictions(true)
+//
+//                        // Save the state
+//                        prefs.edit().putBoolean(KEY_FACTORY_RESET_DISABLED, true).apply()
+//
+//                        // Start notification service
+//                        startProtectionNotification()
+//
+//                        Toast.makeText(this, "Factory reset disabled", Toast.LENGTH_SHORT).show()
+//                        updateStatus()
+//                    } catch (e: Exception) {
+//                        Toast.makeText(this, "Failed to disable factory reset: ${e.message}", Toast.LENGTH_SHORT).show()
+//                    }
+//                } else {
+//                    Toast.makeText(this, "Need device owner permission", Toast.LENGTH_LONG).show()
+//                }
+//            }
+//        } else {
+//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun enableFactoryReset() {
+//        if (devicePolicyManager.isAdminActive(componentName)) {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                    try {
+//                        // Remove factory reset restrictions
+//                        applyFactoryResetRestrictions(false)
+//
+//                        // Save the state
+//                        prefs.edit().putBoolean(KEY_FACTORY_RESET_DISABLED, false).apply()
+//
+//
+//                        Toast.makeText(this, "Factory reset enabled", Toast.LENGTH_SHORT).show()
+//                        updateStatus()
+//                    } catch (e: Exception) {
+//                        Toast.makeText(this, "Failed to enable factory reset: ${e.message}", Toast.LENGTH_SHORT).show()
+//                    }
+//                } else {
+//                    Toast.makeText(this, "Need device owner permission", Toast.LENGTH_LONG).show()
+//                }
+//            }
+//        } else {
+//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun startProtectionNotification() {
+//        // Check if already running
+//        if (!isNotificationServiceRunning()) {
+//            val serviceIntent = Intent(this, FactoryResetProtectionServices::class.java)
+//
+//            try {
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                    startForegroundService(serviceIntent)
+//                } else {
+//                    startService(serviceIntent)
+//                }
+//
+//                // Save notification state
+//                prefs.edit().putBoolean(KEY_NOTIFICATION_ENABLED, true).apply()
+//                Toast.makeText(this, "Protection notification started", Toast.LENGTH_SHORT).show()
+//
+//            } catch (e: Exception) {
+//                Toast.makeText(this, "Failed to start notification: ${e.message}", Toast.LENGTH_SHORT).show()
+//            }
+//        } else {
+//            Toast.makeText(this, "Notification already running", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+////
+////    private fun stopProtectionNotification() {
+////        val serviceIntent = Intent(this, FactoryResetProtectionService::class.java)
+////        stopService(serviceIntent)
+////
+////        // Save notification state
+////        prefs.edit().putBoolean(KEY_NOTIFICATION_ENABLED, false).apply()
+////        Toast.makeText(this, "Protection notification stopped", Toast.LENGTH_SHORT).show()
+////    }
+//
+//    private fun isNotificationServiceRunning(): Boolean {
+//        val manager = getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+//        return manager.getRunningServices(Integer.MAX_VALUE)
+//            .any { it.service.className == FactoryResetProtectionServices::class.java.name }
+//    }
+//
+//    private fun applyFactoryResetRestrictions(disable: Boolean) {
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                try {
+//                    // Use proper UserManager constants
+//                    if (disable) {
+//                        // Add factory reset restriction
+//                        devicePolicyManager.addUserRestriction(componentName,
+//                            UserManager.DISALLOW_FACTORY_RESET)
+//                    } else {
+//                        // Remove factory reset restriction
+//                        devicePolicyManager.clearUserRestriction(componentName,
+//                            UserManager.DISALLOW_FACTORY_RESET)
+//                    }
+//                } catch (e: Exception) {
+//                    Log.e("FactoryReset", "Error applying restrictions: ${e.message}")
+//                    throw e
+//                }
+//            }
+//        }
+//    }
+//
+//    private fun updateStatus() {
+//        val status = StringBuilder("Status:\n")
+//
+//        val isAdminActive = devicePolicyManager.isAdminActive(componentName)
+//        val isFactoryResetDisabled = prefs.getBoolean(KEY_FACTORY_RESET_DISABLED, false)
+//        val isNotificationEnabled = prefs.getBoolean(KEY_NOTIFICATION_ENABLED, false)
+//
+//        if (isAdminActive) {
+//            status.append("✓ Device Admin Enabled\n")
+//
+//            if (isFactoryResetDisabled) {
+//                status.append("✓ Factory Reset Disabled\n")
+//            } else {
+//                status.append("✗ Factory Reset Enabled\n")
+//            }
+//
+//            if (isNotificationEnabled) {
+//                status.append("✓ Protection Notification Active\n")
+//            } else {
+//                status.append("✗ Notification Inactive\n")
+//            }
+//        } else {
+//            status.append("✗ Device Admin Disabled\n")
+//        }
+//
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            try {
+//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                    status.append("✓ Device Owner\n")
+//                } else {
+//                    status.append("✗ Not Device Owner\n")
+//                }
+//            } catch (e: SecurityException) {
+//                status.append("? Device Owner Status Unknown\n")
+//            }
+//        } else {
+//            status.append("✗ Device Owner Not Supported\n")
+//        }
+//
+//        tvStatus.text = status.toString()
+//    }
+//
+//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+//        super.onActivityResult(requestCode, resultCode, data)
+//
+//        when (requestCode) {
+//            REQUEST_CODE_ENABLE_ADMIN -> {
+//                if (resultCode == Activity.RESULT_OK) {
+//                    Toast.makeText(this, "Device admin enabled successfully", Toast.LENGTH_SHORT).show()
+//                } else {
+//                    Toast.makeText(this, "Failed to enable device admin", Toast.LENGTH_SHORT).show()
+//                }
+//                updateStatus()
+//            }
+//
+//            REQUEST_CODE_SET_DEVICE_OWNER -> {
+//                if (resultCode == Activity.RESULT_OK) {
+//                    Toast.makeText(this, "Device owner set successfully", Toast.LENGTH_SHORT).show()
+//                    // Start notification automatically
+//                    startProtectionNotification()
+//                    // Save device owner state
+//                    prefs.edit().putBoolean(KEY_IS_DEVICE_OWNER, true).apply()
+//                } else {
+//                    Toast.makeText(this, "Failed to set device owner", Toast.LENGTH_SHORT).show()
+//                }
+//                updateStatus()
+//            }
+//        }
+//    }
+//
+//    override fun onRequestPermissionsResult(
+//        requestCode: Int,
+//        permissions: Array<out String>,
+//        grantResults: IntArray
+//    ) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+//
+//        when (requestCode) {
+//            REQUEST_CODE_NOTIFICATION_PERMISSION -> {
+//                if (grantResults.isNotEmpty() &&
+//                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                    // Permission granted, proceed with device owner setup
+//                    setDeviceOwner()
+//                } else {
+//                    Toast.makeText(
+//                        this,
+//                        "Cannot show protection status without notification permission",
+//                        Toast.LENGTH_LONG
+//                    ).show()
+//                }
+//            }
+//        }
+//    }
+//
+//    override fun onResume() {
+//        super.onResume()
+//        updateStatus()
+//    }
+//}
 
 
 
@@ -268,6 +634,282 @@
 
 
 
+
+
+
+
+
+
+
+
+//-----------------------------Final Vertion ----------------------------------
+
+
+
+//
+//package com.uztech.phonelock
+//
+//import android.app.Activity
+//import android.app.admin.DevicePolicyManager
+//import android.content.ComponentName
+//import android.content.Context
+//import android.content.Intent
+//import android.content.SharedPreferences
+//import android.os.Build
+//import android.os.Bundle
+//import android.widget.Button
+//import android.widget.TextView
+//import android.widget.Toast
+//import androidx.appcompat.app.AppCompatActivity
+//
+//class MainActivity : AppCompatActivity() {
+//
+//    private lateinit var devicePolicyManager: DevicePolicyManager
+//    private lateinit var componentName: ComponentName
+//    private lateinit var tvStatus: TextView
+//    private lateinit var prefs: SharedPreferences
+//
+//    companion object {
+//        const val REQUEST_CODE_ENABLE_ADMIN = 100
+//        const val REQUEST_CODE_SET_DEVICE_OWNER = 101
+//        const val PREFS_NAME = "PhoneLockPrefs"
+//        const val KEY_FACTORY_RESET_DISABLED = "factory_reset_disabled"
+//        const val KEY_ALL_FEATURES_DISABLED = "all_features_disabled"
+//    }
+//
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        setContentView(R.layout.activity_main)
+//
+//        devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+//        componentName = ComponentName(this, DeviceAdminReceiver::class.java)
+//        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+//
+//        tvStatus = findViewById(R.id.tvStatus)
+//        val btnEnableAdmin = findViewById<Button>(R.id.btnEnableAdmin)
+//
+//        val disableFactoryReset = findViewById<Button>(R.id.disableFactoryReset)
+//        val enableFactoryReset = findViewById<Button>(R.id.enableFactoryReset)
+//
+//        btnEnableAdmin.setOnClickListener { enableDeviceAdmin() }
+//
+//        disableFactoryReset.setOnClickListener {
+//            disableFactoryReset()
+//            // lock function
+//            lockDeviceNow()
+//        }
+//        enableFactoryReset.setOnClickListener { enableFactoryReset() }
+//
+//        updateStatus()
+//    }
+//
+//
+//
+//    private fun enableDeviceAdmin() {
+//
+//        if (!devicePolicyManager.isAdminActive(componentName)) {
+//            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+//            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
+//            intent.putExtra(
+//                DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+//                "Device admin permission is required to lock the device and control settings"
+//            )
+//            startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN)
+//        } else {
+//            Toast.makeText(this, "Device admin already enabled", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun lockDeviceNow() {
+//        if (devicePolicyManager.isAdminActive(componentName)) {
+//            devicePolicyManager.lockNow()
+//            Toast.makeText(this, "Device locked", Toast.LENGTH_SHORT).show()
+//        } else {
+//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun disableFactoryReset() {
+//        if (devicePolicyManager.isAdminActive(componentName)) {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                    try {
+//                        // Apply factory reset prevention
+//                        applyFactoryResetRestrictions(true)
+//
+//                        // Save the state
+//                        prefs.edit().putBoolean(KEY_FACTORY_RESET_DISABLED, true).apply()
+//
+//                        Toast.makeText(this, "Factory reset disabled", Toast.LENGTH_SHORT).show()
+//                        updateStatus()
+//                    } catch (e: Exception) {
+//                        Toast.makeText(this, "Failed to disable factory reset: ${e.message}", Toast.LENGTH_SHORT).show()
+//                    }
+//                } else {
+//                    Toast.makeText(this, "Need device owner permission", Toast.LENGTH_LONG).show()
+//                }
+//            }
+//        } else {
+//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun enableFactoryReset() {
+//        if (devicePolicyManager.isAdminActive(componentName)) {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                    try {
+//                        // Remove factory reset restrictions
+//                        applyFactoryResetRestrictions(false)
+//
+//                        // Save the state
+//                        prefs.edit().putBoolean(KEY_FACTORY_RESET_DISABLED, false).apply()
+//
+//                        Toast.makeText(this, "Factory reset enabled", Toast.LENGTH_SHORT).show()
+//                        updateStatus()
+//                    } catch (e: Exception) {
+//                        Toast.makeText(this, "Failed to enable factory reset: ${e.message}", Toast.LENGTH_SHORT).show()
+//                    }
+//                } else {
+//                    Toast.makeText(this, "Need device owner permission", Toast.LENGTH_LONG).show()
+//                }
+//            }
+//        } else {
+//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun applyFactoryResetRestrictions(disable: Boolean) {
+//        // Factory reset restriction constants
+//        val factoryResetRestriction = "no_factory_reset"
+//        val safeBootRestriction = "no_safe_boot"
+//        val debuggingRestriction = "no_debugging_features"
+//        val devSettingsRestriction = "no_development_settings"
+//
+//        val restrictions = listOf(
+//            factoryResetRestriction,
+//            safeBootRestriction,
+//            debuggingRestriction,
+//            devSettingsRestriction
+//        )
+//
+//        for (restriction in restrictions) {
+//            try {
+//                if (disable) {
+//                    devicePolicyManager.addUserRestriction(componentName, restriction)
+//                } else {
+//                    devicePolicyManager.clearUserRestriction(componentName, restriction)
+//                }
+//            } catch (e: Exception) {
+//                // Some restrictions might not be supported
+//                println("Restriction $restriction not supported: ${e.message}")
+//            }
+//        }
+//
+//        // Also control other related restrictions
+//        val otherRestrictions = listOf(
+//            //  "no_config_wifi",
+//            "no_config_bluetooth",
+//            "no_config_tethering",
+//            "no_share_location"
+//        )
+//
+//        for (restriction in otherRestrictions) {
+//            try {
+//                if (disable) {
+//                    devicePolicyManager.addUserRestriction(componentName, restriction)
+//                } else {
+//                    devicePolicyManager.clearUserRestriction(componentName, restriction)
+//                }
+//            } catch (e: Exception) {
+//                // Ignore unsupported restrictions
+//            }
+//        }
+//    }
+//
+//
+//
+//    private fun updateStatus() {
+//        val status = StringBuilder("Status:\n")
+//
+//        val isAdminActive = devicePolicyManager.isAdminActive(componentName)
+//        val isFactoryResetDisabled = prefs.getBoolean(KEY_FACTORY_RESET_DISABLED, false)
+//
+//
+//        if (isAdminActive) {
+//            status.append("✓ Device Admin Enabled\n")
+//            // Check factory reset status
+//            if (isFactoryResetDisabled) {
+//                status.append("✓ Factory Reset Disabled\n")
+//            } else {
+//                status.append("✗ Factory Reset Enabled\n")
+//            }
+//        } else {
+//            status.append("✗ Device Admin Disabled\n")
+//            status.append("✗ Camera Control Not Available\n")
+//            status.append("✗ Factory Reset Control Not Available\n")
+//        }
+//
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            try {
+//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                    status.append("✓ Device Owner\n")
+//
+//                    if (isAdminActive) {
+//                        try {
+//                            val isPlayStoreHidden = devicePolicyManager.isApplicationHidden(
+//                                componentName,
+//                                "com.android.vending"
+//                            )
+//                            if (isPlayStoreHidden) {
+//                                status.append("✓ Play Store Hidden\n")
+//                            } else {
+//                                status.append("✗ Play Store Visible\n")
+//                            }
+//                        } catch (e: Exception) {
+//                            status.append("? Play Store Status Unknown\n")
+//                        }
+//                    }
+//                } else {
+//                    status.append("✗ Not Device Owner\n")
+//                }
+//            } catch (e: SecurityException) {
+//                status.append("? Device Owner Status Unknown\n")
+//            }
+//        } else {
+//            status.append("✗ Device Owner Not Supported\n")
+//        }
+//
+//        tvStatus.text = status.toString()
+//    }
+//
+//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+//        super.onActivityResult(requestCode, resultCode, data)
+//
+//        when (requestCode) {
+//            REQUEST_CODE_ENABLE_ADMIN -> {
+//                if (resultCode == Activity.RESULT_OK) {
+//                    Toast.makeText(this, "Device admin enabled successfully", Toast.LENGTH_SHORT).show()
+//                } else {
+//                    Toast.makeText(this, "Failed to enable device admin", Toast.LENGTH_SHORT).show()
+//                }
+//                updateStatus()
+//            }
+//
+//            REQUEST_CODE_SET_DEVICE_OWNER -> {
+//                if (resultCode == Activity.RESULT_OK) {
+//                    Toast.makeText(this, "Device owner set successfully", Toast.LENGTH_SHORT).show()
+//                }
+//                updateStatus()
+//            }
+//        }
+//    }
+//
+//    override fun onResume() {
+//        super.onResume()
+//        updateStatus()
+//    }
+//}
 
 
 
@@ -284,22 +926,39 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import android.os.Bundle
+import android.content.SharedPreferences
+import android.graphics.Color
+import android.os.*
+import android.view.*
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.androidgamesdk.gametextinput.Settings
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var componentName: ComponentName
     private lateinit var tvStatus: TextView
+    private lateinit var prefs: SharedPreferences
+    private lateinit var vibrator: Vibrator
+    private lateinit var windowManager: WindowManager
+    private lateinit var lockOverlayView: View
+
+    private val handler = Handler(Looper.getMainLooper())
+    private var isTouchLocked = false
+    private var touchLockStartTime: Long = 0
+    private var lockRunnable: Runnable? = null
+    private var touchBlockerView: View? = null
 
     companion object {
         const val REQUEST_CODE_ENABLE_ADMIN = 100
         const val REQUEST_CODE_SET_DEVICE_OWNER = 101
+        const val PREFS_NAME = "PhoneLockPrefs"
+        const val KEY_FACTORY_RESET_DISABLED = "factory_reset_disabled"
+        const val LOCK_DURATION = 5000L // 5 seconds
+        const val OVERLAY_PERMISSION_REQUEST = 102
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -308,50 +967,201 @@ class MainActivity : AppCompatActivity() {
 
         devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         componentName = ComponentName(this, DeviceAdminReceiver::class.java)
+        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         tvStatus = findViewById(R.id.tvStatus)
-        val btnSetDeviceOwner = findViewById<Button>(R.id.btnSetDeviceOwner)
         val btnEnableAdmin = findViewById<Button>(R.id.btnEnableAdmin)
-        val btnLockNow = findViewById<Button>(R.id.btnLockNow)
-        val btnDisallowAll = findViewById<Button>(R.id.btnDisallowAll)
+        val btnLockTouch = findViewById<Button>(R.id.btnLockTouch)
 
         val disableFactoryReset = findViewById<Button>(R.id.disableFactoryReset)
         val enableFactoryReset = findViewById<Button>(R.id.enableFactoryReset)
 
-        btnSetDeviceOwner.setOnClickListener { setDeviceOwner() }
         btnEnableAdmin.setOnClickListener { enableDeviceAdmin() }
-        btnLockNow.setOnClickListener { lockDeviceNow() }
-        btnDisallowAll.setOnClickListener { disallowAllFeatures() }
+        btnLockTouch.setOnClickListener { lockTouchScreen() }
 
-        disableFactoryReset.setOnClickListener { disableFactoryReset() }
+        disableFactoryReset.setOnClickListener {
+            disableFactoryReset()
+            lockDeviceNow()
+        }
         enableFactoryReset.setOnClickListener { enableFactoryReset() }
 
         updateStatus()
-    }
 
-    private fun setDeviceOwner() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            if (!devicePolicyManager.isDeviceOwnerApp(packageName)) {
-                try {
-                    val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                    intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
-                    intent.putExtra(
-                        DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                        "Setting as device owner for complete control"
-                    )
-                    startActivityForResult(intent, REQUEST_CODE_SET_DEVICE_OWNER)
-                } catch (e: Exception) {
-                    Toast.makeText(
-                        this,
-                        "Use adb command:\nadb shell dpm set-device-owner com.uztech.phonelock/.DeviceAdminReceiver",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            } else {
-                Toast.makeText(this, "Already device owner", Toast.LENGTH_SHORT).show()
-            }
+        // Check if touch was locked before app closed
+        if (prefs.getBoolean("touch_locked", false)) {
+            unlockTouchScreen() // Clean up any leftover lock
         }
     }
+
+    // ==============================================
+    // TOUCH SCREEN LOCK/UNLOCK FUNCTIONS
+    // ==============================================
+
+    fun lockTouchScreen() {
+        if (!checkOverlayPermission()) {
+            requestOverlayPermission()
+            return
+        }
+
+        if (isTouchLocked) {
+            Toast.makeText(this, "Touch screen already locked", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            // 1. Create overlay view that blocks all touch
+            createTouchBlockerOverlay()
+
+            // 2. Vibrate for feedback
+            vibratePhone(200)
+
+            // 3. Show message
+            Toast.makeText(this, "Touch screen locked for 5 seconds", Toast.LENGTH_SHORT).show()
+
+            // 4. Update state
+            isTouchLocked = true
+            touchLockStartTime = System.currentTimeMillis()
+            prefs.edit().putBoolean("touch_locked", true).apply()
+
+            // 5. Schedule auto-unlock
+            lockRunnable = Runnable {
+                unlockTouchScreen()
+                Toast.makeText(applicationContext, "Touch screen auto-unlocked", Toast.LENGTH_SHORT).show()
+            }
+            handler.postDelayed(lockRunnable!!, LOCK_DURATION)
+
+            // 6. Update UI
+            updateStatus()
+
+        } catch (e: Exception) {
+            Toast.makeText(this, "Failed to lock touch: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun unlockTouchScreen() {
+        if (!isTouchLocked) {
+            // Toast.makeText(this, "Touch screen not locked", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            // 1. Remove overlay view
+            removeTouchBlockerOverlay()
+
+            // 2. Vibrate for feedback
+            vibratePhone(100)
+
+            // 3. Show message
+            Toast.makeText(this, "Touch screen unlocked", Toast.LENGTH_SHORT).show()
+
+            // 4. Update state
+            isTouchLocked = false
+            prefs.edit().putBoolean("touch_locked", false).apply()
+
+            // 5. Cancel auto-unlock if still pending
+            lockRunnable?.let { handler.removeCallbacks(it) }
+            lockRunnable = null
+
+            // 6. Update UI
+            updateStatus()
+
+        } catch (e: Exception) {
+            Toast.makeText(this, "Failed to unlock touch: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun createTouchBlockerOverlay() {
+        // Create a full-screen view that blocks all touch events
+        touchBlockerView = View(this).apply {
+            setBackgroundColor(Color.TRANSPARENT) // Semi-transparent black
+            isClickable = true
+            isFocusable = true
+            isFocusableInTouchMode = true
+
+            // Block all touch events
+            setOnTouchListener { _, _ -> true }
+
+            // Block all key events
+            setOnKeyListener { _, _, _ -> true }
+        }
+
+        // Set layout parameters for overlay
+        val params = WindowManager.LayoutParams().apply {
+            type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                WindowManager.LayoutParams.TYPE_PHONE
+            }
+
+            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+
+            width = WindowManager.LayoutParams.MATCH_PARENT
+            height = WindowManager.LayoutParams.MATCH_PARENT
+            format = android.graphics.PixelFormat.TRANSLUCENT
+            gravity = Gravity.START or Gravity.TOP
+
+            // Make sure it's above everything
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+
+        // Add overlay to window
+        windowManager.addView(touchBlockerView, params)
+    }
+
+    private fun removeTouchBlockerOverlay() {
+        try {
+            touchBlockerView?.let {
+                if (it.parent != null) {
+                    windowManager.removeView(it)
+                }
+            }
+            touchBlockerView = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun checkOverlayPermission(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return Settings.canDrawOverlays(this)
+        }
+        return true
+    }
+
+    private fun requestOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                android.net.Uri.parse("package:$packageName")
+            )
+            startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST)
+        }
+    }
+
+    private fun vibratePhone(duration: Long) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(duration)
+            }
+        } catch (e: Exception) {
+            // Ignore
+        }
+    }
+
+    // ==============================================
+    // DEVICE ADMIN FUNCTIONS
+    // ==============================================
 
     private fun enableDeviceAdmin() {
         if (!devicePolicyManager.isAdminActive(componentName)) {
@@ -381,12 +1191,12 @@ class MainActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
                     try {
-                        // Apply factory reset prevention
                         applyFactoryResetRestrictions(true)
+                        prefs.edit().putBoolean(KEY_FACTORY_RESET_DISABLED, true).apply()
                         Toast.makeText(this, "Factory reset disabled", Toast.LENGTH_SHORT).show()
                         updateStatus()
                     } catch (e: Exception) {
-                        Toast.makeText(this, "Failed to disable factory reset: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(this, "Need device owner permission", Toast.LENGTH_LONG).show()
@@ -402,12 +1212,12 @@ class MainActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
                     try {
-                        // Remove factory reset restrictions
                         applyFactoryResetRestrictions(false)
+                        prefs.edit().putBoolean(KEY_FACTORY_RESET_DISABLED, false).apply()
                         Toast.makeText(this, "Factory reset enabled", Toast.LENGTH_SHORT).show()
                         updateStatus()
                     } catch (e: Exception) {
-                        Toast.makeText(this, "Failed to enable factory reset: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(this, "Need device owner permission", Toast.LENGTH_LONG).show()
@@ -419,17 +1229,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyFactoryResetRestrictions(disable: Boolean) {
-        // Factory reset restriction constants
-        val factoryResetRestriction = "no_factory_reset"
-        val safeBootRestriction = "no_safe_boot"
-        val debuggingRestriction = "no_debugging_features"
-        val devSettingsRestriction = "no_development_settings"
-
         val restrictions = listOf(
-            factoryResetRestriction,
-            safeBootRestriction,
-            debuggingRestriction,
-            devSettingsRestriction
+            "no_factory_reset",
+            "no_safe_boot",
+            "no_debugging_features",
+            "no_development_settings"
         )
 
         for (restriction in restrictions) {
@@ -440,252 +1244,67 @@ class MainActivity : AppCompatActivity() {
                     devicePolicyManager.clearUserRestriction(componentName, restriction)
                 }
             } catch (e: Exception) {
-                // Some restrictions might not be supported
-                println("Restriction $restriction not supported: ${e.message}")
-            }
-        }
-
-        // Also control other related restrictions
-        val otherRestrictions = listOf(
-            "no_config_wifi",
-            "no_config_bluetooth",
-            "no_config_tethering",
-            "no_share_location"
-        )
-
-        for (restriction in otherRestrictions) {
-            try {
-                if (disable) {
-                    devicePolicyManager.addUserRestriction(componentName, restriction)
-                } else {
-                    devicePolicyManager.clearUserRestriction(componentName, restriction)
-                }
-            } catch (e: Exception) {
-                // Ignore unsupported restrictions
+                // Ignore unsupported
             }
         }
     }
 
-    private fun disallowAllFeatures() {
-        if (devicePolicyManager.isAdminActive(componentName)) {
-            try {
-                // Disable camera
-                devicePolicyManager.setCameraDisabled(componentName, true)
-
-                // Device owner features
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
-                        // Hide Play Store
-                        try {
-                            devicePolicyManager.setApplicationHidden(
-                                componentName,
-                                "com.android.vending",
-                                true
-                            )
-                        } catch (e: Exception) {
-                            // Play Store might not exist
-                        }
-
-                        // Apply all restrictions
-                        applyAllRestrictions()
-
-                        // Also disable factory reset
-                        applyFactoryResetRestrictions(true)
-                    }
-                }
-
-                Toast.makeText(this, "All features disabled including factory reset", Toast.LENGTH_SHORT).show()
-                updateStatus()
-            } catch (e: SecurityException) {
-                Toast.makeText(
-                    this,
-                    "Need device owner permission for complete control",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        } else {
-            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun applyAllRestrictions() {
-        // Create a list of restriction names to try
-        val restrictionNames = mutableListOf<String>()
-
-        // Try to add DISALLOW_INSTALL_APPS
-        try {
-            val disallowInstallApps = try {
-                // Try to get the constant value
-                DevicePolicyManager::class.java.getField("DISALLOW_INSTALL_APPS").get(null) as String
-            } catch (e: NoSuchFieldException) {
-                // If constant doesn't exist, use the string value directly
-                "no_install_apps"
-            } catch (e: Exception) {
-                null
-            }
-
-            if (disallowInstallApps != null) {
-                restrictionNames.add(disallowInstallApps)
-            }
-        } catch (e: Exception) {
-            // Ignore
-        }
-
-        // Try to add DISALLOW_UNINSTALL_APPS
-        try {
-            val disallowUninstallApps = try {
-                DevicePolicyManager::class.java.getField("DISALLOW_UNINSTALL_APPS").get(null) as String
-            } catch (e: NoSuchFieldException) {
-                "no_uninstall_apps"
-            } catch (e: Exception) {
-                null
-            }
-
-            if (disallowUninstallApps != null) {
-                restrictionNames.add(disallowUninstallApps)
-            }
-        } catch (e: Exception) {
-            // Ignore
-        }
-
-        // Add other commonly available restrictions
-        addCommonRestrictions(restrictionNames)
-
-        // Apply all restrictions
-        for (restriction in restrictionNames) {
-            try {
-                devicePolicyManager.addUserRestriction(componentName, restriction)
-                println("Applied restriction: $restriction")
-            } catch (e: IllegalArgumentException) {
-                println("Failed to apply restriction $restriction: ${e.message}")
-            } catch (e: SecurityException) {
-                println("Security exception for $restriction: ${e.message}")
-            }
-        }
-    }
-
-    private fun addCommonRestrictions(restrictions: MutableList<String>) {
-        // Add restrictions that are usually available
-
-        // Try DISALLOW_CONFIG_WIFI
-        try {
-            restrictions.add("no_config_wifi")
-        } catch (e: Exception) {}
-
-        // Try DISALLOW_CONFIG_BLUETOOTH
-        try {
-            restrictions.add("no_config_bluetooth")
-        } catch (e: Exception) {}
-
-        // Try DISALLOW_SHARE_LOCATION (API 23+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            try {
-                restrictions.add("no_share_location")
-            } catch (e: Exception) {}
-        }
-
-        // Try DISALLOW_CONFIG_TETHERING
-        try {
-            restrictions.add("no_config_tethering")
-        } catch (e: Exception) {}
-
-        // Try DISALLOW_CONFIG_DATE_TIME
-        try {
-            restrictions.add("no_config_date_time")
-        } catch (e: Exception) {}
-
-        // Try DISALLOW_SAFE_BOOT
-        try {
-            restrictions.add("no_safe_boot")
-        } catch (e: Exception) {}
-    }
+    // ==============================================
+    // STATUS & UI FUNCTIONS
+    // ==============================================
 
     private fun updateStatus() {
         val status = StringBuilder("Status:\n")
 
         val isAdminActive = devicePolicyManager.isAdminActive(componentName)
+        val isFactoryResetDisabled = prefs.getBoolean(KEY_FACTORY_RESET_DISABLED, false)
 
         if (isAdminActive) {
             status.append("✓ Device Admin Enabled\n")
 
-            try {
-                val isCameraDisabled = devicePolicyManager.getCameraDisabled(componentName)
-                if (isCameraDisabled) {
-                    status.append("✓ Camera Disabled\n")
-                } else {
-                    status.append("✗ Camera Enabled\n")
-                }
-            } catch (e: SecurityException) {
-                status.append("? Camera Status Unknown\n")
+            if (isFactoryResetDisabled) {
+                status.append("✓ Factory Reset Disabled\n")
+            } else {
+                status.append("✗ Factory Reset Enabled\n")
             }
 
-            // Check factory reset status
-            try {
-                // Try to check if factory reset is restricted
-                val restrictions = listOf("no_factory_reset", "no_safe_boot")
-                var factoryResetDisabled = false
-                for (restriction in restrictions) {
-                    try {
-                        // Note: There's no direct API to check if a restriction is set
-                        // We'll assume if device owner is set and we applied restrictions
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
-                                factoryResetDisabled = true
-                                break
-                            }
-                        }
-                    } catch (e: Exception) {
-                        // Ignore
-                    }
-                }
-
-                if (factoryResetDisabled) {
-                    status.append("✓ Factory Reset Disabled\n")
-                } else {
-                    status.append("✗ Factory Reset Enabled\n")
-                }
-            } catch (e: Exception) {
-                status.append("? Factory Reset Status Unknown\n")
+            // Touch lock status
+            if (isTouchLocked) {
+                val elapsed = System.currentTimeMillis() - touchLockStartTime
+                val remaining = maxOf(0, LOCK_DURATION - elapsed)
+                status.append("⏳ Touch Screen LOCKED\n")
+                status.append("  Auto-unlock in: ${remaining/1000}s\n")
+            } else {
+                status.append("✓ Touch Screen Ready\n")
             }
-
         } else {
             status.append("✗ Device Admin Disabled\n")
-            status.append("✗ Camera Control Not Available\n")
-            status.append("✗ Factory Reset Control Not Available\n")
+            status.append("✗ Touch Lock Not Available\n")
+        }
+
+        // Overlay permission status
+        if (!checkOverlayPermission()) {
+            status.append("⚠ Overlay Permission Needed\n")
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             try {
                 if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
                     status.append("✓ Device Owner\n")
-
-                    if (isAdminActive) {
-                        try {
-                            val isPlayStoreHidden = devicePolicyManager.isApplicationHidden(
-                                componentName,
-                                "com.android.vending"
-                            )
-                            if (isPlayStoreHidden) {
-                                status.append("✓ Play Store Hidden\n")
-                            } else {
-                                status.append("✗ Play Store Visible\n")
-                            }
-                        } catch (e: Exception) {
-                            status.append("? Play Store Status Unknown\n")
-                        }
-                    }
                 } else {
                     status.append("✗ Not Device Owner\n")
                 }
             } catch (e: SecurityException) {
-                status.append("? Device Owner Status Unknown\n")
+                status.append("? Device Owner Status\n")
             }
-        } else {
-            status.append("✗ Device Owner Not Supported\n")
         }
 
         tvStatus.text = status.toString()
     }
+
+    // ==============================================
+    // ACTIVITY LIFECYCLE
+    // ==============================================
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -693,7 +1312,7 @@ class MainActivity : AppCompatActivity() {
         when (requestCode) {
             REQUEST_CODE_ENABLE_ADMIN -> {
                 if (resultCode == Activity.RESULT_OK) {
-                    Toast.makeText(this, "Device admin enabled successfully", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Device admin enabled", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, "Failed to enable device admin", Toast.LENGTH_SHORT).show()
                 }
@@ -702,7 +1321,16 @@ class MainActivity : AppCompatActivity() {
 
             REQUEST_CODE_SET_DEVICE_OWNER -> {
                 if (resultCode == Activity.RESULT_OK) {
-                    Toast.makeText(this, "Device owner set successfully", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Device owner set", Toast.LENGTH_SHORT).show()
+                }
+                updateStatus()
+            }
+
+            OVERLAY_PERMISSION_REQUEST -> {
+                if (checkOverlayPermission()) {
+                    Toast.makeText(this, "Overlay permission granted", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Overlay permission denied", Toast.LENGTH_SHORT).show()
                 }
                 updateStatus()
             }
@@ -712,5 +1340,23 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateStatus()
+
+        // Auto-unlock if time has passed
+        if (isTouchLocked) {
+            val elapsed = System.currentTimeMillis() - touchLockStartTime
+            if (elapsed >= LOCK_DURATION) {
+                unlockTouchScreen()
+                Toast.makeText(this, "Touch screen auto-unlocked", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clean up
+        unlockTouchScreen()
+        handler.removeCallbacksAndMessages(null)
     }
 }
+
+

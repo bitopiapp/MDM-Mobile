@@ -916,470 +916,7 @@
 
 
 
-// --------------------------touch lock  screen with permission --------------------
-//
-//package com.uztech.phonelock
-//
-//import android.app.Activity
-//import android.app.admin.DevicePolicyManager
-//import android.content.ComponentName
-//import android.content.Context
-//import android.content.Intent
-//import android.content.SharedPreferences
-//import android.graphics.Color
-//import android.os.*
-//import android.provider.Settings
-//import android.view.*
-//import android.widget.Button
-//import android.widget.TextView
-//import android.widget.Toast
-//import androidx.appcompat.app.AppCompatActivity
-//
-//class MainActivity : AppCompatActivity() {
-//
-//    private lateinit var devicePolicyManager: DevicePolicyManager
-//    private lateinit var componentName: ComponentName
-//    private lateinit var tvStatus: TextView
-//    private lateinit var prefs: SharedPreferences
-//    private lateinit var vibrator: Vibrator
-//    private lateinit var windowManager: WindowManager
-//
-//    private val handler = Handler(Looper.getMainLooper())
-//    private var isTouchLocked = false
-//    private var touchLockStartTime: Long = 0
-//    private var lockRunnable: Runnable? = null
-//    private var touchBlockerView: View? = null
-//
-//    companion object {
-//        const val REQUEST_CODE_ENABLE_ADMIN = 100
-//        const val REQUEST_CODE_SET_DEVICE_OWNER = 101
-//        const val PREFS_NAME = "PhoneLockPrefs"
-//        const val KEY_FACTORY_RESET_DISABLED = "factory_reset_disabled"
-//        const val LOCK_DURATION = 5000L // 5 seconds
-//        const val OVERLAY_PERMISSION_REQUEST = 102
-//    }
-//
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        setContentView(R.layout.activity_main)
-//
-//        devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-//        componentName = ComponentName(this, DeviceAdminReceiver::class.java)
-//        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-//        vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-//        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-//
-//        tvStatus = findViewById(R.id.tvStatus)
-//        val btnEnableAdmin = findViewById<Button>(R.id.btnEnableAdmin)
-//        val btnLockTouch = findViewById<Button>(R.id.btnLockTouch)
-//
-//        val disableFactoryReset = findViewById<Button>(R.id.disableFactoryReset)
-//        val enableFactoryReset = findViewById<Button>(R.id.enableFactoryReset)
-//
-//        btnEnableAdmin.setOnClickListener { enableDeviceAdmin() }
-//        btnLockTouch.setOnClickListener { lockTouchScreen() }
-//
-//        disableFactoryReset.setOnClickListener {
-//            disableFactoryReset()
-//            lockDeviceNow()
-//        }
-//        enableFactoryReset.setOnClickListener { enableFactoryReset() }
-//
-//        updateStatus()
-//    }
-//
-//    // ==============================================
-//    // TOUCH SCREEN LOCK/UNLOCK FUNCTIONS
-//    // ==============================================
-//
-//    fun lockTouchScreen() {
-//        if (!checkOverlayPermission()) {
-//            requestOverlayPermission()
-//            return
-//        }
-//
-//        if (isTouchLocked) {
-//            Toast.makeText(this, "Touch already locked. Auto-unlock in ${getRemainingTime()}s", Toast.LENGTH_SHORT).show()
-//            return
-//        }
-//
-//        try {
-//            // 1. Create overlay view that blocks all touch
-//            createTouchBlockerOverlay()
-//
-//            // 2. Vibrate for feedback
-//            vibratePhone(200)
-//
-//            // 3. Show message
-//            Toast.makeText(this, "Touch locked for 5 seconds", Toast.LENGTH_SHORT).show()
-//
-//            // 4. Update state
-//            isTouchLocked = true
-//            touchLockStartTime = System.currentTimeMillis()
-//
-//            // 5. Schedule auto-unlock
-//            lockRunnable = Runnable {
-//                unlockTouchScreen()
-//                Toast.makeText(applicationContext, "Touch auto-unlocked", Toast.LENGTH_SHORT).show()
-//            }
-//            handler.postDelayed(lockRunnable!!, LOCK_DURATION)
-//
-//            // 6. Update UI
-//            updateStatus()
-//
-//        } catch (e: Exception) {
-//            Toast.makeText(this, "Failed to lock: ${e.message}", Toast.LENGTH_SHORT).show()
-//            isTouchLocked = false
-//        }
-//    }
-//
-//    private fun unlockTouchScreen() {
-//        if (!isTouchLocked) return
-//
-//        try {
-//            // 1. Remove overlay view
-//            removeTouchBlockerOverlay()
-//
-//            // 2. Vibrate for feedback
-//            vibratePhone(100)
-//
-//            // 3. Update state
-//            isTouchLocked = false
-//
-//            // 4. Clean up runnable
-//            lockRunnable?.let { handler.removeCallbacks(it) }
-//            lockRunnable = null
-//
-//            // 5. Update UI
-//            updateStatus()
-//
-//        } catch (e: Exception) {
-//            // Force reset even on error
-//            isTouchLocked = false
-//            lockRunnable = null
-//            updateStatus()
-//        }
-//    }
-//
-//    private fun getRemainingTime(): Long {
-//        if (!isTouchLocked) return 0
-//        val elapsed = System.currentTimeMillis() - touchLockStartTime
-//        return maxOf(0, (LOCK_DURATION - elapsed) / 1000)
-//    }
-//
-//    private fun createTouchBlockerOverlay() {
-//        // Create a full-screen view that blocks all touch events
-//        touchBlockerView = View(this).apply {
-//            // Semi-transparent dark overlay so user can see screen is locked
-//            setBackgroundColor(Color.argb(136, 0, 0, 0)) // 136 = 0x88 = ~50% transparency// 50% transparent black
-//            isClickable = true
-//            isFocusable = true
-//
-//            // Block all touch events
-//            setOnTouchListener { _, _ -> true }
-//
-//            // Add a text indicator (optional)
-//            /*
-//            val textView = TextView(context).apply {
-//                text = "Touch Locked\nAuto-unlock in 5s"
-//                textSize = 20f
-//                gravity = Gravity.CENTER
-//                setTextColor(Color.WHITE)
-//            }
-//            addView(textView)
-//            */
-//        }
-//
-//        // Set layout parameters for overlay
-//        val params = WindowManager.LayoutParams().apply {
-//            type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-//            } else {
-//                WindowManager.LayoutParams.TYPE_PHONE
-//            }
-//
-//            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-//                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-//                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-//                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
-//
-//            width = WindowManager.LayoutParams.MATCH_PARENT
-//            height = WindowManager.LayoutParams.MATCH_PARENT
-//            format = android.graphics.PixelFormat.TRANSLUCENT
-//            gravity = Gravity.START or Gravity.TOP
-//
-//            // Make sure it's above everything
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-//                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-//            }
-//        }
-//
-//        // Add overlay to window
-//        windowManager.addView(touchBlockerView, params)
-//    }
-//
-//    private fun removeTouchBlockerOverlay() {
-//        try {
-//            touchBlockerView?.let {
-//                if (it.parent != null) {
-//                    windowManager.removeView(it)
-//                }
-//            }
-//        } catch (e: Exception) {
-//            // Ignore - view might already be removed
-//        } finally {
-//            touchBlockerView = null
-//        }
-//    }
-//
-//    private fun checkOverlayPermission(): Boolean {
-//        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            Settings.canDrawOverlays(this)
-//        } else {
-//            true // Always true for Android < 6.0
-//        }
-//    }
-//
-//    private fun requestOverlayPermission() {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            val intent = Intent(
-//                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-//                android.net.Uri.parse("package:$packageName")
-//            )
-//            try {
-//                startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST)
-//                Toast.makeText(this, "Please enable 'Display over other apps'", Toast.LENGTH_LONG).show()
-//            } catch (e: Exception) {
-//                // Fallback to app info
-//                val intentFallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-//                    data = android.net.Uri.parse("package:$packageName")
-//                }
-//                startActivity(intentFallback)
-//            }
-//        }
-//    }
-//
-//    private fun vibratePhone(duration: Long) {
-//        try {
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
-//            } else {
-//                @Suppress("DEPRECATION")
-//                vibrator.vibrate(duration)
-//            }
-//        } catch (e: Exception) {
-//            // Ignore vibration errors
-//        }
-//    }
-//
-//    // ==============================================
-//    // DEVICE ADMIN FUNCTIONS (UNCHANGED)
-//    // ==============================================
-//
-//    private fun enableDeviceAdmin() {
-//        if (!devicePolicyManager.isAdminActive(componentName)) {
-//            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-//            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
-//            intent.putExtra(
-//                DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-//                "Device admin permission is required to lock the device and control settings"
-//            )
-//            startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN)
-//        } else {
-//            Toast.makeText(this, "Device admin already enabled", Toast.LENGTH_SHORT).show()
-//        }
-//    }
-//
-//    private fun lockDeviceNow() {
-//        if (devicePolicyManager.isAdminActive(componentName)) {
-//            devicePolicyManager.lockNow()
-//            Toast.makeText(this, "Device locked", Toast.LENGTH_SHORT).show()
-//        } else {
-//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
-//        }
-//    }
-//
-//    private fun disableFactoryReset() {
-//        if (devicePolicyManager.isAdminActive(componentName)) {
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
-//                    try {
-//                        applyFactoryResetRestrictions(true)
-//                        prefs.edit().putBoolean(KEY_FACTORY_RESET_DISABLED, true).apply()
-//                        Toast.makeText(this, "Factory reset disabled", Toast.LENGTH_SHORT).show()
-//                        updateStatus()
-//                    } catch (e: Exception) {
-//                        Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
-//                    }
-//                } else {
-//                    Toast.makeText(this, "Need device owner permission", Toast.LENGTH_LONG).show()
-//                }
-//            }
-//        } else {
-//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
-//        }
-//    }
-//
-//    private fun enableFactoryReset() {
-//        if (devicePolicyManager.isAdminActive(componentName)) {
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
-//                    try {
-//                        applyFactoryResetRestrictions(false)
-//                        prefs.edit().putBoolean(KEY_FACTORY_RESET_DISABLED, false).apply()
-//                        Toast.makeText(this, "Factory reset enabled", Toast.LENGTH_SHORT).show()
-//                        updateStatus()
-//                    } catch (e: Exception) {
-//                        Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
-//                    }
-//                } else {
-//                    Toast.makeText(this, "Need device owner permission", Toast.LENGTH_LONG).show()
-//                }
-//            }
-//        } else {
-//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
-//        }
-//    }
-//
-//    private fun applyFactoryResetRestrictions(disable: Boolean) {
-//        val restrictions = listOf(
-//            "no_factory_reset",
-//            "no_safe_boot",
-//            "no_debugging_features",
-//            "no_development_settings"
-//        )
-//
-//        for (restriction in restrictions) {
-//            try {
-//                if (disable) {
-//                    devicePolicyManager.addUserRestriction(componentName, restriction)
-//                } else {
-//                    devicePolicyManager.clearUserRestriction(componentName, restriction)
-//                }
-//            } catch (e: Exception) {
-//                // Ignore unsupported
-//            }
-//        }
-//    }
-//
-//    // ==============================================
-//    // STATUS & UI FUNCTIONS
-//    // ==============================================
-//
-//    private fun updateStatus() {
-//        val status = StringBuilder("Status:\n")
-//
-//        val isAdminActive = devicePolicyManager.isAdminActive(componentName)
-//        val isFactoryResetDisabled = prefs.getBoolean(KEY_FACTORY_RESET_DISABLED, false)
-//
-//        if (isAdminActive) {
-//            status.append("✓ Device Admin Enabled\n")
-//
-//            if (isFactoryResetDisabled) {
-//                status.append("✓ Factory Reset Disabled\n")
-//            } else {
-//                status.append("✗ Factory Reset Enabled\n")
-//            }
-//
-//            // Touch lock status
-//            if (isTouchLocked) {
-//                val remaining = getRemainingTime()
-//                status.append("⏳ Touch Screen LOCKED\n")
-//                status.append("  Auto-unlock in: ${remaining}s\n")
-//            } else {
-//                status.append("✓ Touch Screen Ready\n")
-//            }
-//        } else {
-//            status.append("✗ Device Admin Disabled\n")
-//            status.append("✗ Touch Lock Not Available\n")
-//        }
-//
-//        // Overlay permission status
-//        if (!checkOverlayPermission()) {
-//            status.append("⚠ Overlay Permission Needed\n")
-//        }
-//
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//            try {
-//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
-//                    status.append("✓ Device Owner\n")
-//                } else {
-//                    status.append("✗ Not Device Owner\n")
-//                }
-//            } catch (e: SecurityException) {
-//                status.append("? Device Owner Status\n")
-//            }
-//        }
-//
-//        tvStatus.text = status.toString()
-//    }
-//
-//    // ==============================================
-//    // ACTIVITY LIFECYCLE
-//    // ==============================================
-//
-//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-//        super.onActivityResult(requestCode, resultCode, data)
-//
-//        when (requestCode) {
-//            REQUEST_CODE_ENABLE_ADMIN -> {
-//                if (resultCode == Activity.RESULT_OK) {
-//                    Toast.makeText(this, "Device admin enabled", Toast.LENGTH_SHORT).show()
-//                } else {
-//                    Toast.makeText(this, "Failed to enable device admin", Toast.LENGTH_SHORT).show()
-//                }
-//                updateStatus()
-//            }
-//
-//            REQUEST_CODE_SET_DEVICE_OWNER -> {
-//                if (resultCode == Activity.RESULT_OK) {
-//                    Toast.makeText(this, "Device owner set", Toast.LENGTH_SHORT).show()
-//                }
-//                updateStatus()
-//            }
-//
-//            OVERLAY_PERMISSION_REQUEST -> {
-//                if (checkOverlayPermission()) {
-//                    Toast.makeText(this, "Overlay permission granted!", Toast.LENGTH_SHORT).show()
-//                    // Auto-proceed to lock after permission granted
-//                    handler.postDelayed({
-//                        lockTouchScreen()
-//                    }, 500)
-//                } else {
-//                    Toast.makeText(this, "Overlay permission denied", Toast.LENGTH_SHORT).show()
-//                }
-//                updateStatus()
-//            }
-//        }
-//    }
-//
-//    override fun onResume() {
-//        super.onResume()
-//        updateStatus()
-//
-//        // Auto-unlock if time has passed while app was in background
-//        if (isTouchLocked) {
-//            val elapsed = System.currentTimeMillis() - touchLockStartTime
-//            if (elapsed >= LOCK_DURATION) {
-//                unlockTouchScreen()
-//                Toast.makeText(this, "Touch auto-unlocked", Toast.LENGTH_SHORT).show()
-//            }
-//        }
-//    }
-//
-//    override fun onDestroy() {
-//        super.onDestroy()
-//        // Clean up everything
-//        unlockTouchScreen()
-//        handler.removeCallbacksAndMessages(null)
-//    }
-//}
-
-
-
-
-
-// touch lock without permission  -----------------------------------------------------------------
+ ////--------------------------touch lock  screen with permission --------------------
 
 package com.uztech.phonelock
 
@@ -1391,6 +928,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.*
+import android.provider.Settings
 import android.view.*
 import android.widget.Button
 import android.widget.TextView
@@ -1404,18 +942,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvStatus: TextView
     private lateinit var prefs: SharedPreferences
     private lateinit var vibrator: Vibrator
+    private lateinit var windowManager: WindowManager
 
     private val handler = Handler(Looper.getMainLooper())
     private var isTouchLocked = false
     private var touchLockStartTime: Long = 0
     private var lockRunnable: Runnable? = null
+    private var touchBlockerView: View? = null
 
     companion object {
         const val REQUEST_CODE_ENABLE_ADMIN = 100
         const val REQUEST_CODE_SET_DEVICE_OWNER = 101
         const val PREFS_NAME = "PhoneLockPrefs"
         const val KEY_FACTORY_RESET_DISABLED = "factory_reset_disabled"
-        const val LOCK_DURATION = 5000L // 5 seconds
+        const val LOCK_DURATION = 10000L // 10 seconds
+        const val OVERLAY_PERMISSION_REQUEST = 102
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -1426,6 +967,7 @@ class MainActivity : AppCompatActivity() {
         componentName = ComponentName(this, DeviceAdminReceiver::class.java)
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         tvStatus = findViewById(R.id.tvStatus)
         val btnEnableAdmin = findViewById<Button>(R.id.btnEnableAdmin)
@@ -1447,52 +989,42 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ==============================================
-    // TOUCH SCREEN LOCK/UNLOCK WITHOUT PERMISSION
+    // TOUCH SCREEN LOCK/UNLOCK FUNCTIONS
     // ==============================================
 
     fun lockTouchScreen() {
+        if (!checkOverlayPermission()) {
+            requestOverlayPermission()
+            return
+        }
+
         if (isTouchLocked) {
             Toast.makeText(this, "Touch already locked. Auto-unlock in ${getRemainingTime()}s", Toast.LENGTH_SHORT).show()
             return
         }
 
         try {
-            // 1. Make window NOT touchable - NO PERMISSION NEEDED
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-            )
+            // 1. Create overlay view that blocks all touch
+            createTouchBlockerOverlay()
 
-            // 2. Add semi-transparent overlay
-            val rootView = findViewById<ViewGroup>(android.R.id.content)
-            val overlayView = View(this).apply {
-                setBackgroundColor(Color.argb(100, 0, 0, 0)) // Semi-transparent
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-                tag = "overlay_view" // Tag for identification
-            }
-            rootView.addView(overlayView)
-
-            // 3. Vibrate for feedback
+            // 2. Vibrate for feedback
             vibratePhone(200)
 
-            // 4. Show message
-            Toast.makeText(this, "Touch locked for 5 seconds", Toast.LENGTH_SHORT).show()
+            // 3. Show message
+            Toast.makeText(this, "Touch locked for 10 seconds", Toast.LENGTH_SHORT).show()
 
-            // 5. Update state
+            // 4. Update state
             isTouchLocked = true
             touchLockStartTime = System.currentTimeMillis()
 
-            // 6. Schedule auto-unlock
+            // 5. Schedule auto-unlock
             lockRunnable = Runnable {
                 unlockTouchScreen()
-                Toast.makeText(this@MainActivity, "Touch auto-unlocked", Toast.LENGTH_SHORT).show()
+                Toast.makeText(applicationContext, "Touch auto-unlocked", Toast.LENGTH_SHORT).show()
             }
             handler.postDelayed(lockRunnable!!, LOCK_DURATION)
 
-            // 7. Update UI
+            // 6. Update UI
             updateStatus()
 
         } catch (e: Exception) {
@@ -1505,35 +1037,24 @@ class MainActivity : AppCompatActivity() {
         if (!isTouchLocked) return
 
         try {
-            // 1. Restore touchability
-            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+            // 1. Remove overlay view
+            removeTouchBlockerOverlay()
 
-            // 2. Remove overlay view
-            val rootView = findViewById<ViewGroup>(android.R.id.content)
-            for (i in 0 until rootView.childCount) {
-                val child = rootView.getChildAt(i)
-                if (child.tag == "overlay_view") {
-                    rootView.removeView(child)
-                    break
-                }
-            }
-
-            // 3. Vibrate for feedback
+            // 2. Vibrate for feedback
             vibratePhone(100)
 
-            // 4. Update state
+            // 3. Update state
             isTouchLocked = false
 
-            // 5. Clean up runnable
+            // 4. Clean up runnable
             lockRunnable?.let { handler.removeCallbacks(it) }
             lockRunnable = null
 
-            // 6. Update UI
+            // 5. Update UI
             updateStatus()
 
         } catch (e: Exception) {
             // Force reset even on error
-            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
             isTouchLocked = false
             lockRunnable = null
             updateStatus()
@@ -1544,6 +1065,98 @@ class MainActivity : AppCompatActivity() {
         if (!isTouchLocked) return 0
         val elapsed = System.currentTimeMillis() - touchLockStartTime
         return maxOf(0, (LOCK_DURATION - elapsed) / 1000)
+    }
+
+    private fun createTouchBlockerOverlay() {
+        // Create a full-screen view that blocks all touch events
+        touchBlockerView = View(this).apply {
+            // Semi-transparent dark overlay so user can see screen is locked
+            setBackgroundColor(Color.argb(136, 0, 0, 0)) // 136 = 0x88 = ~50% transparency// 50% transparent black
+            isClickable = true
+            isFocusable = true
+
+            // Block all touch events
+            setOnTouchListener { _, _ -> true }
+
+            // Add a text indicator (optional)
+            /*
+            val textView = TextView(context).apply {
+                text = "Touch Locked\nAuto-unlock in 5s"
+                textSize = 20f
+                gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+            }
+            addView(textView)
+            */
+        }
+
+        // Set layout parameters for overlay
+        val params = WindowManager.LayoutParams().apply {
+            type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                WindowManager.LayoutParams.TYPE_PHONE
+            }
+
+            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+
+            width = WindowManager.LayoutParams.MATCH_PARENT
+            height = WindowManager.LayoutParams.MATCH_PARENT
+            format = android.graphics.PixelFormat.TRANSLUCENT
+            gravity = Gravity.START or Gravity.TOP
+
+            // Make sure it's above everything
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+
+        // Add overlay to window
+        windowManager.addView(touchBlockerView, params)
+    }
+
+    private fun removeTouchBlockerOverlay() {
+        try {
+            touchBlockerView?.let {
+                if (it.parent != null) {
+                    windowManager.removeView(it)
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore - view might already be removed
+        } finally {
+            touchBlockerView = null
+        }
+    }
+
+    private fun checkOverlayPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else {
+            true // Always true for Android < 6.0
+        }
+    }
+
+    private fun requestOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                android.net.Uri.parse("package:$packageName")
+            )
+            try {
+                startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST)
+                Toast.makeText(this, "Please enable 'Display over other apps'", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                // Fallback to app info
+                val intentFallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = android.net.Uri.parse("package:$packageName")
+                }
+                startActivity(intentFallback)
+            }
+        }
     }
 
     private fun vibratePhone(duration: Long) {
@@ -1560,7 +1173,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ==============================================
-    // DEVICE ADMIN FUNCTIONS
+    // DEVICE ADMIN FUNCTIONS (UNCHANGED)
     // ==============================================
 
     private fun enableDeviceAdmin() {
@@ -1681,10 +1294,10 @@ class MainActivity : AppCompatActivity() {
             status.append("✗ Touch Lock Not Available\n")
         }
 
-        // REMOVED: No overlay permission check needed
-        // if (!checkOverlayPermission()) {
-        //     status.append("⚠ Overlay Permission Needed\n")
-        // }
+        // Overlay permission status
+        if (!checkOverlayPermission()) {
+            status.append("⚠ Overlay Permission Needed\n")
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             try {
@@ -1724,6 +1337,19 @@ class MainActivity : AppCompatActivity() {
                 }
                 updateStatus()
             }
+
+            OVERLAY_PERMISSION_REQUEST -> {
+                if (checkOverlayPermission()) {
+                    Toast.makeText(this, "Overlay permission granted!", Toast.LENGTH_SHORT).show()
+                    // Auto-proceed to lock after permission granted
+                    handler.postDelayed({
+                        lockTouchScreen()
+                    }, 500)
+                } else {
+                    Toast.makeText(this, "Overlay permission denied", Toast.LENGTH_SHORT).show()
+                }
+                updateStatus()
+            }
         }
     }
 
@@ -1748,3 +1374,377 @@ class MainActivity : AppCompatActivity() {
         handler.removeCallbacksAndMessages(null)
     }
 }
+
+
+
+
+//
+//// touch lock without permission  ---- only single screen -------------------------------------------------------------
+//
+//package com.uztech.phonelock
+//
+//import android.app.Activity
+//import android.app.admin.DevicePolicyManager
+//import android.content.ComponentName
+//import android.content.Context
+//import android.content.Intent
+//import android.content.SharedPreferences
+//import android.graphics.Color
+//import android.os.*
+//import android.view.*
+//import android.widget.Button
+//import android.widget.TextView
+//import android.widget.Toast
+//import androidx.appcompat.app.AppCompatActivity
+//
+//class MainActivity : AppCompatActivity() {
+//
+//    private lateinit var devicePolicyManager: DevicePolicyManager
+//    private lateinit var componentName: ComponentName
+//    private lateinit var tvStatus: TextView
+//    private lateinit var prefs: SharedPreferences
+//    private lateinit var vibrator: Vibrator
+//
+//    private val handler = Handler(Looper.getMainLooper())
+//    private var isTouchLocked = false
+//    private var touchLockStartTime: Long = 0
+//    private var lockRunnable: Runnable? = null
+//
+//    companion object {
+//        const val REQUEST_CODE_ENABLE_ADMIN = 100
+//        const val REQUEST_CODE_SET_DEVICE_OWNER = 101
+//        const val PREFS_NAME = "PhoneLockPrefs"
+//        const val KEY_FACTORY_RESET_DISABLED = "factory_reset_disabled"
+//        const val LOCK_DURATION = 5000L // 5 seconds
+//    }
+//
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        setContentView(R.layout.activity_main)
+//
+//        devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+//        componentName = ComponentName(this, DeviceAdminReceiver::class.java)
+//        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+//        vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+//
+//        tvStatus = findViewById(R.id.tvStatus)
+//        val btnEnableAdmin = findViewById<Button>(R.id.btnEnableAdmin)
+//        val btnLockTouch = findViewById<Button>(R.id.btnLockTouch)
+//
+//        val disableFactoryReset = findViewById<Button>(R.id.disableFactoryReset)
+//        val enableFactoryReset = findViewById<Button>(R.id.enableFactoryReset)
+//
+//        btnEnableAdmin.setOnClickListener { enableDeviceAdmin() }
+//        btnLockTouch.setOnClickListener { lockTouchScreen() }
+//
+//        disableFactoryReset.setOnClickListener {
+//            disableFactoryReset()
+//            lockDeviceNow()
+//        }
+//        enableFactoryReset.setOnClickListener { enableFactoryReset() }
+//
+//        updateStatus()
+//    }
+//
+//    // ==============================================
+//    // TOUCH SCREEN LOCK/UNLOCK WITHOUT PERMISSION
+//    // ==============================================
+//
+//    fun lockTouchScreen() {
+//        if (isTouchLocked) {
+//            Toast.makeText(this, "Touch already locked. Auto-unlock in ${getRemainingTime()}s", Toast.LENGTH_SHORT).show()
+//            return
+//        }
+//
+//        try {
+//            // 1. Make window NOT touchable - NO PERMISSION NEEDED
+//            window.setFlags(
+//                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+//                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+//            )
+//
+//            // 2. Add semi-transparent overlay
+//            val rootView = findViewById<ViewGroup>(android.R.id.content)
+//            val overlayView = View(this).apply {
+//                setBackgroundColor(Color.argb(100, 0, 0, 0)) // Semi-transparent
+//                layoutParams = ViewGroup.LayoutParams(
+//                    ViewGroup.LayoutParams.MATCH_PARENT,
+//                    ViewGroup.LayoutParams.MATCH_PARENT
+//                )
+//                tag = "overlay_view" // Tag for identification
+//            }
+//            rootView.addView(overlayView)
+//
+//            // 3. Vibrate for feedback
+//            vibratePhone(200)
+//
+//            // 4. Show message
+//            Toast.makeText(this, "Touch locked for 5 seconds", Toast.LENGTH_SHORT).show()
+//
+//            // 5. Update state
+//            isTouchLocked = true
+//            touchLockStartTime = System.currentTimeMillis()
+//
+//            // 6. Schedule auto-unlock
+//            lockRunnable = Runnable {
+//                unlockTouchScreen()
+//                Toast.makeText(this@MainActivity, "Touch auto-unlocked", Toast.LENGTH_SHORT).show()
+//            }
+//            handler.postDelayed(lockRunnable!!, LOCK_DURATION)
+//
+//            // 7. Update UI
+//            updateStatus()
+//
+//        } catch (e: Exception) {
+//            Toast.makeText(this, "Failed to lock: ${e.message}", Toast.LENGTH_SHORT).show()
+//            isTouchLocked = false
+//        }
+//    }
+//
+//    private fun unlockTouchScreen() {
+//        if (!isTouchLocked) return
+//
+//        try {
+//            // 1. Restore touchability
+//            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+//
+//            // 2. Remove overlay view
+//            val rootView = findViewById<ViewGroup>(android.R.id.content)
+//            for (i in 0 until rootView.childCount) {
+//                val child = rootView.getChildAt(i)
+//                if (child.tag == "overlay_view") {
+//                    rootView.removeView(child)
+//                    break
+//                }
+//            }
+//
+//            // 3. Vibrate for feedback
+//            vibratePhone(100)
+//
+//            // 4. Update state
+//            isTouchLocked = false
+//
+//            // 5. Clean up runnable
+//            lockRunnable?.let { handler.removeCallbacks(it) }
+//            lockRunnable = null
+//
+//            // 6. Update UI
+//            updateStatus()
+//
+//        } catch (e: Exception) {
+//            // Force reset even on error
+//            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+//            isTouchLocked = false
+//            lockRunnable = null
+//            updateStatus()
+//        }
+//    }
+//
+//    private fun getRemainingTime(): Long {
+//        if (!isTouchLocked) return 0
+//        val elapsed = System.currentTimeMillis() - touchLockStartTime
+//        return maxOf(0, (LOCK_DURATION - elapsed) / 1000)
+//    }
+//
+//    private fun vibratePhone(duration: Long) {
+//        try {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+//            } else {
+//                @Suppress("DEPRECATION")
+//                vibrator.vibrate(duration)
+//            }
+//        } catch (e: Exception) {
+//            // Ignore vibration errors
+//        }
+//    }
+//
+//    // ==============================================
+//    // DEVICE ADMIN FUNCTIONS
+//    // ==============================================
+//
+//    private fun enableDeviceAdmin() {
+//        if (!devicePolicyManager.isAdminActive(componentName)) {
+//            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+//            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
+//            intent.putExtra(
+//                DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+//                "Device admin permission is required to lock the device and control settings"
+//            )
+//            startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN)
+//        } else {
+//            Toast.makeText(this, "Device admin already enabled", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun lockDeviceNow() {
+//        if (devicePolicyManager.isAdminActive(componentName)) {
+//            devicePolicyManager.lockNow()
+//            Toast.makeText(this, "Device locked", Toast.LENGTH_SHORT).show()
+//        } else {
+//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun disableFactoryReset() {
+//        if (devicePolicyManager.isAdminActive(componentName)) {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                    try {
+//                        applyFactoryResetRestrictions(true)
+//                        prefs.edit().putBoolean(KEY_FACTORY_RESET_DISABLED, true).apply()
+//                        Toast.makeText(this, "Factory reset disabled", Toast.LENGTH_SHORT).show()
+//                        updateStatus()
+//                    } catch (e: Exception) {
+//                        Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+//                    }
+//                } else {
+//                    Toast.makeText(this, "Need device owner permission", Toast.LENGTH_LONG).show()
+//                }
+//            }
+//        } else {
+//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun enableFactoryReset() {
+//        if (devicePolicyManager.isAdminActive(componentName)) {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                    try {
+//                        applyFactoryResetRestrictions(false)
+//                        prefs.edit().putBoolean(KEY_FACTORY_RESET_DISABLED, false).apply()
+//                        Toast.makeText(this, "Factory reset enabled", Toast.LENGTH_SHORT).show()
+//                        updateStatus()
+//                    } catch (e: Exception) {
+//                        Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+//                    }
+//                } else {
+//                    Toast.makeText(this, "Need device owner permission", Toast.LENGTH_LONG).show()
+//                }
+//            }
+//        } else {
+//            Toast.makeText(this, "Please enable device admin first", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun applyFactoryResetRestrictions(disable: Boolean) {
+//        val restrictions = listOf(
+//            "no_factory_reset",
+//            "no_safe_boot",
+//            "no_debugging_features",
+//            "no_development_settings"
+//        )
+//
+//        for (restriction in restrictions) {
+//            try {
+//                if (disable) {
+//                    devicePolicyManager.addUserRestriction(componentName, restriction)
+//                } else {
+//                    devicePolicyManager.clearUserRestriction(componentName, restriction)
+//                }
+//            } catch (e: Exception) {
+//                // Ignore unsupported
+//            }
+//        }
+//    }
+//
+//    // ==============================================
+//    // STATUS & UI FUNCTIONS
+//    // ==============================================
+//
+//    private fun updateStatus() {
+//        val status = StringBuilder("Status:\n")
+//
+//        val isAdminActive = devicePolicyManager.isAdminActive(componentName)
+//        val isFactoryResetDisabled = prefs.getBoolean(KEY_FACTORY_RESET_DISABLED, false)
+//
+//        if (isAdminActive) {
+//            status.append("✓ Device Admin Enabled\n")
+//
+//            if (isFactoryResetDisabled) {
+//                status.append("✓ Factory Reset Disabled\n")
+//            } else {
+//                status.append("✗ Factory Reset Enabled\n")
+//            }
+//
+//            // Touch lock status
+//            if (isTouchLocked) {
+//                val remaining = getRemainingTime()
+//                status.append("⏳ Touch Screen LOCKED\n")
+//                status.append("  Auto-unlock in: ${remaining}s\n")
+//            } else {
+//                status.append("✓ Touch Screen Ready\n")
+//            }
+//        } else {
+//            status.append("✗ Device Admin Disabled\n")
+//            status.append("✗ Touch Lock Not Available\n")
+//        }
+//
+//        // REMOVED: No overlay permission check needed
+//        // if (!checkOverlayPermission()) {
+//        //     status.append("⚠ Overlay Permission Needed\n")
+//        // }
+//
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            try {
+//                if (devicePolicyManager.isDeviceOwnerApp(packageName)) {
+//                    status.append("✓ Device Owner\n")
+//                } else {
+//                    status.append("✗ Not Device Owner\n")
+//                }
+//            } catch (e: SecurityException) {
+//                status.append("? Device Owner Status\n")
+//            }
+//        }
+//
+//        tvStatus.text = status.toString()
+//    }
+//
+//    // ==============================================
+//    // ACTIVITY LIFECYCLE
+//    // ==============================================
+//
+//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+//        super.onActivityResult(requestCode, resultCode, data)
+//
+//        when (requestCode) {
+//            REQUEST_CODE_ENABLE_ADMIN -> {
+//                if (resultCode == Activity.RESULT_OK) {
+//                    Toast.makeText(this, "Device admin enabled", Toast.LENGTH_SHORT).show()
+//                } else {
+//                    Toast.makeText(this, "Failed to enable device admin", Toast.LENGTH_SHORT).show()
+//                }
+//                updateStatus()
+//            }
+//
+//            REQUEST_CODE_SET_DEVICE_OWNER -> {
+//                if (resultCode == Activity.RESULT_OK) {
+//                    Toast.makeText(this, "Device owner set", Toast.LENGTH_SHORT).show()
+//                }
+//                updateStatus()
+//            }
+//        }
+//    }
+//
+//    override fun onResume() {
+//        super.onResume()
+//        updateStatus()
+//
+//        // Auto-unlock if time has passed while app was in background
+//        if (isTouchLocked) {
+//            val elapsed = System.currentTimeMillis() - touchLockStartTime
+//            if (elapsed >= LOCK_DURATION) {
+//                unlockTouchScreen()
+//                Toast.makeText(this, "Touch auto-unlocked", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//    }
+//
+//    override fun onDestroy() {
+//        super.onDestroy()
+//        // Clean up everything
+//        unlockTouchScreen()
+//        handler.removeCallbacksAndMessages(null)
+//    }
+//}

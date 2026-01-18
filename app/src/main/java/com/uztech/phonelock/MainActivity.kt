@@ -2990,7 +2990,7 @@ class MainActivity : AppCompatActivity() {
         const val REQUEST_CODE_ENABLE_DEVICE_OWNER = 101
         const val PREFS_NAME = "PhoneLockPrefs"
         const val KEY_FACTORY_RESET_DISABLED = "factory_reset_disabled"
-        const val LOCK_DURATION = 10000L
+        const val LOCK_DURATION = 30 * 60 * 1000L
         const val OVERLAY_PERMISSION_REQUEST = 102
 
         // FCM Log tag
@@ -3016,25 +3016,18 @@ class MainActivity : AppCompatActivity() {
 
         // Setup buttons
         findViewById<Button>(R.id.btnEnableAdmin).setOnClickListener { enableDeviceAdmin() }
-        findViewById<Button>(R.id.btnLockTouch).setOnClickListener { lockTouchScreen() }
         findViewById<Button>(R.id.btnGetFcmToken).setOnClickListener {
             Log.d(FCM_LOG_TAG, "User clicked: Get FCM Token")
             getAndDisplayFCMToken()
         }
-        findViewById<Button>(R.id.btnUnlockTouch).setOnClickListener { unlockTouchScreen() }
 
         // Factory Reset Buttons
         findViewById<Button>(R.id.disableFactoryReset).setOnClickListener {
             disableFactoryReset()
         }
-        findViewById<Button>(R.id.enableFactoryReset).setOnClickListener {
-            enableFactoryReset()
-        }
 
-        // Device Owner Button
-        findViewById<Button>(R.id.btnEnableDeviceOwner).setOnClickListener {
-            showDeviceOwnerInstructions()
-        }
+
+
 
         // Start foreground service
         startForegroundServiceForFCM()
@@ -3088,13 +3081,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkBodyForCommands(body: String, title: String?) {
+        //hfhvghvghc
         Log.d(FCM_LOG_TAG, "📝 Analyzing notification body: $body")
 
         val lowerBody = body.lowercase(Locale.getDefault())
 
-        when {
-            lowerBody.contains("active") ||
-                    lowerBody.contains("account status is now active") -> {
+        when { lowerBody.contains("account status is now active") -> {
                 Log.d(FCM_LOG_TAG, "✅ Found ACTIVE command - LOCKING SCREEN")
                 handler.postDelayed({
                     if (lockTouchScreen()) {
@@ -3102,8 +3094,6 @@ class MainActivity : AppCompatActivity() {
                     }
                 }, 1000)
             }
-
-            lowerBody.contains("inactive") ||
                     lowerBody.contains("account status is now inactive") -> {
                 Log.d(FCM_LOG_TAG, "✅ Found INACTIVE command - UNLOCKING SCREEN")
                 handler.postDelayed({
@@ -3112,6 +3102,14 @@ class MainActivity : AppCompatActivity() {
                     }
                 }, 1000)
             }
+
+            lowerBody.contains("account status is now pending") -> {
+                Log.d(FCM_LOG_TAG, "✅ Found INACTIVE command - UNLOCKING SCREEN")
+                handler.postDelayed({
+                    enableFactoryReset()
+                }, 1000)
+            }
+
 
             else -> {
                 Log.d(FCM_LOG_TAG, "ℹ️ No lock/unlock command found in body")

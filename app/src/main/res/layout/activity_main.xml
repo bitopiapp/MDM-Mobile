@@ -1,70 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#121212"
+    tools:context=".MainActivity">
 
-    <LinearLayout
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:text="📱 PhoneLock"
+        android:textSize="24sp"
+        android:textColor="#FFFFFF"
+        android:gravity="center"
+        android:layout_marginBottom="24dp"
+        android:textStyle="bold" />
 
-        <!-- Status Display -->
-        <TextView
-            android:id="@+id/tvStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:background="#FFFFFF"
-            android:padding="12dp"
-            android:text="Status: Loading..."
-            android:textSize="14sp"
-            android:elevation="2dp" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-        <!-- Control Buttons -->
-        <Button
-            android:id="@+id/btnEnableAdmin"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="Enable Device Admin" />
-
-        <Button
-            android:id="@+id/btnLockTouch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="Lock Touch Screen (10s)" />
-
-        <Button
-            android:id="@+id/btnGetFcmToken"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:text="Get FCM Token" />
-
-        <!-- Factory Reset Controls -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Status: Loading..."
+                android:textSize="14sp"
+                android:textColor="#CCCCCC"
+                android:gravity="start"
+                android:layout_marginBottom="16dp"
+                android:background="#1E1E1E"
+                android:padding="16dp"
+                android:lineSpacingExtra="4dp" />
+
+            <!-- Device Admin Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔐 Device Admin"
+                android:textSize="16sp"
+                android:textColor="#FF5722"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/btnEnableAdmin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Enable Device Admin"
+                android:textSize="14sp"
+                android:layout_marginBottom="12dp"
+                android:backgroundTint="#FF5722" />
+
+            <Button
+                android:id="@+id/btnEnableDeviceOwner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Enable Device Owner (ADB)"
+                android:textSize="14sp"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="#9C27B0" />
+
+            <!-- Touch Lock Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔒 Touch Lock"
+                android:textSize="16sp"
+                android:textColor="#F44336"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/btnLockTouch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Lock Touch Screen"
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp"
+                android:backgroundTint="#F44336" />
+
+            <Button
+                android:id="@+id/btnUnlockTouch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Unlock Touch Screen"
+                android:textSize="14sp"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="#4CAF50" />
+
+            <!-- Factory Reset Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⚙️ Factory Reset Control"
+                android:textSize="16sp"
+                android:textColor="#2196F3"
+                android:layout_marginBottom="8dp" />
 
             <Button
                 android:id="@+id/disableFactoryReset"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Disable Factory Reset" />
+                android:text="Disable Factory Reset"
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp"
+                android:backgroundTint="#FF9800" />
 
             <Button
                 android:id="@+id/enableFactoryReset"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="Enable Factory Reset" />
+                android:text="Enable Factory Reset"
+                android:textSize="14sp"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="#009688" />
+
+            <!-- FCM Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📡 Firebase Cloud Messaging"
+                android:textSize="16sp"
+                android:textColor="#00BCD4"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/btnGetFcmToken"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Get FCM Token"
+                android:textSize="14sp"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="#2196F3" />
+
+            <!-- Instructions -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📝 Instructions"
+                android:textSize="16sp"
+                android:textColor="#FF9800"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1. Enable Device Admin first\n2. For factory reset control, set as Device Owner via ADB:\n   adb shell dpm set-device-owner com.uztech.phonelock/.DeviceAdminReceiver\n3. Get FCM token and use in Firebase Console\n4. Send notification with body:\n   • 'Your account status is now Active.' → Locks screen\n   • 'Your account status is now Inactive.' → Unlocks screen"
+                android:textSize="12sp"
+                android:textColor="#AAAAAA"
+                android:lineSpacingExtra="4dp" />
 
         </LinearLayout>
+    </ScrollView>
 
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>

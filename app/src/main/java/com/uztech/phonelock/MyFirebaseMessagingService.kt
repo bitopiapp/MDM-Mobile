@@ -863,13 +863,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-
+        Log.e(TAG, "Wake lock error $remoteMessage")
         // Acquire wake lock to prevent device sleep
         acquireWakeLock()
 
         // Get notification data
-        val title = remoteMessage.notification?.title ?: "PhoneLock"
-        val body = remoteMessage.notification?.body ?: ""
+        val title = remoteMessage.data["title"].toString()
+        val body = remoteMessage.data["message"].toString()
 
         // Log to Logcat
         logFCMMessage(title, body, remoteMessage)
@@ -909,7 +909,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         // Log data payload if available
         if (remoteMessage.data.isNotEmpty()) {
-            Log.wtf(TAG, "📊 Data Payload:")
+            Log.wtf(TAG, "📊 Data Payload: ${remoteMessage.data["message"]}")
             remoteMessage.data.forEach { (key, value) ->
                 Log.wtf(TAG, "   $key = $value")
             }

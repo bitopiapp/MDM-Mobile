@@ -27,3 +27,4 @@ class DeviceAdminReceiver : DeviceAdminReceiver() {
         Toast.makeText(context, "Lock Task Mode Exited", Toast.LENGTH_SHORT).show()
     }
 }
+

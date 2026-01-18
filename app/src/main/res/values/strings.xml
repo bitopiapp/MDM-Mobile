@@ -16,4 +16,5 @@
     <string name="device_admin_disabled">Device Admin Disabled</string>
     <string name="device_locked">Device Locked</string>
     <string name="features_disabled">All features disabled</string>
+    <string name="device_admin_description">Required for device locking features</string>
 </resources>

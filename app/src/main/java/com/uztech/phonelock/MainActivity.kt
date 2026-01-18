@@ -3231,7 +3231,7 @@ class MainActivity : AppCompatActivity() {
         try {
             lockManager.lockTouchScreen()
             vibratePhone(200)
-            Toast.makeText(this, "Touch locked for 10s", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Touch locked for Pending Payment. Please pay us.\nBksah : 0188XXXXXXXXX \n Thanks", Toast.LENGTH_SHORT).show()
 
             isTouchLocked = true
             touchLockStartTime = System.currentTimeMillis()
@@ -3470,7 +3470,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Touch Lock Status
-        status.append(if (isTouchLocked) "🔒 Touch Locked (${getRemainingTime()}s)\n" else "✅ Touch Ready\n")
+        status.append(if (isTouchLocked) "🔒 Touch locked for Pending Payment. Please pay us.\nBksah : 0188XXXXXXXXX \n Thanks\n" else "✅ Touch Ready\n")
 
         // FCM Status
         status.append(if (fcmToken != null) "✅ FCM Token Available\n" else "❌ No FCM Token\n")

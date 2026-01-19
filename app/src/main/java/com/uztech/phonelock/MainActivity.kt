@@ -1,6 +1,4 @@
-
 package com.uztech.phonelock
-
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -30,6 +28,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
 import java.util.*
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var devicePolicyManager: DevicePolicyManager
@@ -43,14 +42,12 @@ class MainActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var isTouchLocked = false
     private var touchLockStartTime: Long = 0
-    private var lockRunnable: Runnable? = null
 
     companion object {
         const val REQUEST_CODE_ENABLE_ADMIN = 100
         const val REQUEST_CODE_ENABLE_DEVICE_OWNER = 101
         const val PREFS_NAME = "PhoneLockPrefs"
         const val KEY_FACTORY_RESET_DISABLED = "factory_reset_disabled"
-        const val LOCK_DURATION = 30 * 60 * 1000L
         const val OVERLAY_PERMISSION_REQUEST = 102
 
         // FCM Log tag
@@ -86,7 +83,6 @@ class MainActivity : AppCompatActivity() {
             disableFactoryReset()
         }
 
-
         // Start foreground service
         startForegroundServiceForFCM()
 
@@ -104,21 +100,14 @@ class MainActivity : AppCompatActivity() {
         checkAndRestoreLockState()
     }
 
-
     private fun checkAndRestoreLockState() {
         val wasLocked = prefs.getBoolean("was_locked_before_reboot", false)
-        val lockExpiryTime = prefs.getLong("lock_expiry_time", 0)
-        val currentTime = System.currentTimeMillis()
 
-        if (wasLocked && lockExpiryTime > currentTime) {
-            // Lock was active and not expired - restore it
+        if (wasLocked) {
+            // Lock was active - restore it (no time limit check)
             handler.postDelayed({
                 lockTouchScreen()
             }, 2000) // Delay to ensure UI is ready
-        } else if (wasLocked && lockExpiryTime <= currentTime) {
-            // Lock was active but expired - clear state
-            prefs.edit().putBoolean("was_locked_before_reboot", false).apply()
-            unlockTouchScreen()
         }
     }
 
@@ -150,8 +139,8 @@ class MainActivity : AppCompatActivity() {
 
         Log.d(FCM_LOG_TAG, "══════════════════════════════════════")
         Log.d(FCM_LOG_TAG, "🔍 Checking for FCM notifications...")
-        Log.d(FCM_LOG_TAG, "Title 112313: $title")
-        Log.d(FCM_LOG_TAG, "Body 23213123: $body")
+        Log.d(FCM_LOG_TAG, "Title: $title")
+        Log.d(FCM_LOG_TAG, "Body: $body")
         Log.d(FCM_LOG_TAG, "══════════════════════════════════════")
 
         if (body != null) {
@@ -160,19 +149,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkBodyForCommands(body: String, title: String?) {
-        //hfhvghvghc
         Log.d(FCM_LOG_TAG, "📝 Analyzing notification body: $body  $title")
 
         val lowerBody = body.lowercase(Locale.getDefault())
 
-        when { lowerBody.contains("account status is now active") -> {
-            Log.d(FCM_LOG_TAG, "✅ Found ACTIVE command - LOCKING SCREEN")
-            handler.postDelayed({
-                if (lockTouchScreen()) {
-                    Toast.makeText(this, "🔒 Screen locked: Account is Active", Toast.LENGTH_LONG).show()
-                }
-            }, 1000)
-        }
+        when {
+            lowerBody.contains("account status is now active") -> {
+                Log.d(FCM_LOG_TAG, "✅ Found ACTIVE command - LOCKING SCREEN")
+                handler.postDelayed({
+                    if (lockTouchScreen()) {
+                        Toast.makeText(this, "🔒 Screen locked: Account is Active", Toast.LENGTH_LONG).show()
+                    }
+                }, 1000)
+            }
             lowerBody.contains("account status is now inactive") -> {
                 Log.d(FCM_LOG_TAG, "✅ Found INACTIVE command - UNLOCKING SCREEN")
                 handler.postDelayed({
@@ -181,15 +170,12 @@ class MainActivity : AppCompatActivity() {
                     }
                 }, 1000)
             }
-
             lowerBody.contains("account status is now pending") -> {
-                Log.d(FCM_LOG_TAG, "✅ Found INACTIVE command - UNLOCKING SCREEN")
+                Log.d(FCM_LOG_TAG, "✅ Found PENDING command - ENABLING FACTORY RESET")
                 handler.postDelayed({
                     enableFactoryReset()
                 }, 1000)
             }
-
-
             else -> {
                 Log.d(FCM_LOG_TAG, "ℹ️ No lock/unlock command found in body")
                 if (title != null) {
@@ -251,7 +237,6 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 Toast.makeText(this, userMsg, Toast.LENGTH_LONG).show()
-
                 return@OnCompleteListener
             }
 
@@ -265,28 +250,23 @@ class MainActivity : AppCompatActivity() {
             println("\n🎯 COPY THIS TOKEN 🎯")
             println(token)
             println("🎯 END OF TOKEN 🎯\n")
+
             // Get device ID
             val deviceId = Settings.Secure.getString(contentResolver,
                 Settings.Secure.ANDROID_ID) ?: "unknown"
 
+            // Register device to your API
+            val registerUrl = "https://ephonelocker.info/api/register?imei_number=$deviceId&name=${Build.MANUFACTURER} ${Build.MODEL}&phone=01700000009&email=$deviceId@example.com&address=Dhaka, Bangladesh&nominee_name=Nominee Name&nominee_phone=01800000009&total_amount=50000&down_payment=10000&interval_type=1&interval_value=6&payable_amount=40000&per_installment=3333.33&bill_date=2025-01-15&admin_id=2"
+            Log.d("RequestURL", "URL: $registerUrl")
 
-
-
-
-            val url2 = "https://ephonelocker.info/api/register?imei_number=$deviceId&name=${Build.MANUFACTURER} ${Build.MODEL}&phone=01700000009&email=$deviceId@example.com&address=Dhaka, Bangladesh&nominee_name=Nominee Name&nominee_phone=01800000009&total_amount=50000&down_payment=10000&interval_type=1&interval_value=6&payable_amount=40000&per_installment=3333.33&bill_date=2025-01-15&admin_id=2"
-            Log.d("RequestURL", "URL: $url2")
             Thread {
                 try {
-                    val urlObj = URL(url2)
+                    val urlObj = URL(registerUrl)
                     val connection = urlObj.openConnection() as HttpURLConnection
                     connection.requestMethod = "POST"
-
-                    // Debug: Print all response headers
                     connection.setRequestProperty("User-Agent", "Android-App")
-                    connection.setRequestProperty("Accept", "application/json") // Request JSON
-
-                    // Try to follow redirects
-                    connection.instanceFollowRedirects = false // Disable to see redirects
+                    connection.setRequestProperty("Accept", "application/json")
+                    connection.instanceFollowRedirects = false
 
                     val responseCode = connection.responseCode
                     Log.d("POST Response", "Response Code: $responseCode")
@@ -295,7 +275,6 @@ class MainActivity : AppCompatActivity() {
                     if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
                         responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
                         responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
-
                         val location = connection.getHeaderField("Location")
                         Log.d("Redirect", "Redirected to: $location")
 
@@ -314,11 +293,11 @@ class MainActivity : AppCompatActivity() {
                         connection.errorStream.bufferedReader().use { it.readText() }
                     }
 
-                    // Log only first 500 chars to see what we get
+                    // Log only first 500 chars
                     val preview = if (response.length > 500) response.substring(0, 500) + "..." else response
                     Log.d("POST Response", "Preview: $preview")
 
-                    // Check if response is HTML (contains <html> tag)
+                    // Check if response is HTML
                     val isHtml = response.contains("<html", ignoreCase = true)
                     Log.d("ResponseType", "Is HTML: $isHtml")
 
@@ -328,10 +307,10 @@ class MainActivity : AppCompatActivity() {
                                 "Server returned HTML page. Check endpoint URL or authentication.",
                                 Toast.LENGTH_LONG).show()
                         } else if (responseCode == 200) {
-                            Toast.makeText(this@MainActivity, "Success!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "Device registered successfully!", Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(this@MainActivity,
-                                "Error: $responseCode", Toast.LENGTH_SHORT).show()
+                                "Registration Error: $responseCode", Toast.LENGTH_SHORT).show()
                         }
                     }
 
@@ -339,85 +318,55 @@ class MainActivity : AppCompatActivity() {
                     Log.e("POST Error", e.toString(), e)
                     runOnUiThread {
                         Toast.makeText(this@MainActivity,
-                            "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                            "Registration Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }.start()
 
-
-            val url = "https://ephonelocker.info/api/save-firebase-token?token=$token&imei=$deviceId"
-
-            Log.d("RequestURL", "URL: $url")
+            // Save FCM token to your API
+            val tokenUrl = "https://ephonelocker.info/api/save-firebase-token?token=$token&imei=$deviceId"
+            Log.d("RequestURL", "Token URL: $tokenUrl")
 
             Thread {
                 try {
-                    val urlObj = URL(url)
+                    val urlObj = URL(tokenUrl)
                     val connection = urlObj.openConnection() as HttpURLConnection
                     connection.requestMethod = "POST"
-
-                    // Debug: Print all response headers
                     connection.setRequestProperty("User-Agent", "Android-App")
-                    connection.setRequestProperty("Accept", "application/json") // Request JSON
-
-                    // Try to follow redirects
-                    connection.instanceFollowRedirects = false // Disable to see redirects
+                    connection.setRequestProperty("Accept", "application/json")
+                    connection.instanceFollowRedirects = false
 
                     val responseCode = connection.responseCode
-                    Log.d("POST Response", "Response Code: $responseCode")
+                    Log.d("Token POST", "Response Code: $responseCode")
 
-                    // Check for redirects
                     if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
                         responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
                         responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
-
                         val location = connection.getHeaderField("Location")
-                        Log.d("Redirect", "Redirected to: $location")
-
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity,
-                                "Server redirected to login page. Endpoint may require auth.",
-                                Toast.LENGTH_LONG).show()
-                        }
+                        Log.d("Token Redirect", "Redirected to: $location")
                         return@Thread
                     }
 
-                    // Read response
                     val response = if (responseCode == HttpURLConnection.HTTP_OK) {
                         connection.inputStream.bufferedReader().use { it.readText() }
                     } else {
                         connection.errorStream.bufferedReader().use { it.readText() }
                     }
 
-                    // Log only first 500 chars to see what we get
-                    val preview = if (response.length > 500) response.substring(0, 500) + "..." else response
-                    Log.d("POST Response", "Preview: $preview")
-
-                    // Check if response is HTML (contains <html> tag)
                     val isHtml = response.contains("<html", ignoreCase = true)
-                    Log.d("ResponseType", "Is HTML: $isHtml")
 
                     runOnUiThread {
-                        if (isHtml) {
-                            Toast.makeText(this@MainActivity,
-                                "Server returned HTML page. Check endpoint URL or authentication.",
-                                Toast.LENGTH_LONG).show()
-                        } else if (responseCode == 200) {
-                            Toast.makeText(this@MainActivity, "Success!", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(this@MainActivity,
-                                "Error: $responseCode", Toast.LENGTH_SHORT).show()
+                        if (!isHtml && responseCode == 200) {
+                            Toast.makeText(this@MainActivity, "Token saved to server!", Toast.LENGTH_SHORT).show()
                         }
                     }
 
                 } catch (e: Exception) {
-                    Log.e("POST Error", e.toString(), e)
-                    runOnUiThread {
-                        Toast.makeText(this@MainActivity,
-                            "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
+                    Log.e("Token POST Error", e.toString(), e)
                 }
             }.start()
-            // Save token
+
+            // Save token locally
             saveToken(token)
 
             // Show to user
@@ -454,8 +403,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (isTouchLocked) {
-            val remainingTime = getRemainingTime()
-            Toast.makeText(this, "Already locked. Unlocks in ${remainingTime}s", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Screen already locked", Toast.LENGTH_SHORT).show()
             return false
         }
 
@@ -477,21 +425,15 @@ class MainActivity : AppCompatActivity() {
             isTouchLocked = true
             touchLockStartTime = System.currentTimeMillis()
 
-            // Save lock state for reboot recovery
-            val expiryTime = System.currentTimeMillis() + LOCK_DURATION
+            // Save lock state for reboot recovery (NO TIME LIMIT)
             prefs.edit().apply {
                 putBoolean("was_locked_before_reboot", true)
-                putLong("lock_expiry_time", expiryTime)
                 putLong("lock_start_time", touchLockStartTime)
                 apply()
             }
 
-            // Schedule auto-unlock
-            lockRunnable = Runnable {
-                unlockTouchScreen()
-                Toast.makeText(applicationContext, "⏰ Auto-unlocked after ${LOCK_DURATION / 60000} minutes", Toast.LENGTH_SHORT).show()
-            }
-            handler.postDelayed(lockRunnable!!, LOCK_DURATION)
+            // NO AUTO-UNLOCK SCHEDULED
+            // Lock will remain until FCM notification unlocks it
 
             updateStatus()
             return true
@@ -511,23 +453,20 @@ class MainActivity : AppCompatActivity() {
         try {
             // Stop persistent lock service
             stopPersistentLockService()
+
             // Remove lock
             lockManager.unlockTouchScreen()
             vibratePhone(100)
             isTouchLocked = false
-            lockRunnable?.let { handler.removeCallbacks(it) }
-            lockRunnable = null
-
-
 
             // Clear lock state
             prefs.edit().apply {
                 putBoolean("was_locked_before_reboot", false)
-                remove("lock_expiry_time")
                 remove("lock_start_time")
                 apply()
             }
 
+            Toast.makeText(this, "✅ Screen unlocked", Toast.LENGTH_SHORT).show()
             updateStatus()
             return true
 
@@ -535,14 +474,11 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "❌ Unlock failed: ${e.message}", Toast.LENGTH_SHORT).show()
             // Force clear state even if unlock fails
             isTouchLocked = false
-            lockRunnable = null
             prefs.edit().putBoolean("was_locked_before_reboot", false).apply()
-
             updateStatus()
             return false
         }
     }
-
 
     private fun startPersistentLockService() {
         try {
@@ -554,28 +490,19 @@ class MainActivity : AppCompatActivity() {
             } else {
                 startService(serviceIntent)
             }
-
         } catch (e: Exception) {
-
+            Log.e(FCM_LOG_TAG, "Failed to start persistent service: ${e.message}")
         }
     }
-
-
 
     private fun stopPersistentLockService() {
         try {
             val serviceIntent = Intent(this, PersistentLockService::class.java)
             serviceIntent.action = PersistentLockService.ACTION_STOP_LOCK
             startService(serviceIntent)
-
         } catch (e: Exception) {
-
+            Log.e(FCM_LOG_TAG, "Failed to stop persistent service: ${e.message}")
         }
-    }
-    private fun getRemainingTime(): Long {
-        if (!isTouchLocked) return 0
-        val elapsed = System.currentTimeMillis() - touchLockStartTime
-        return maxOf(0, (LOCK_DURATION - elapsed) / 1000)
     }
 
     private fun checkOverlayPermission(): Boolean {
@@ -633,30 +560,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, "✅ Device admin already enabled", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun showDeviceOwnerInstructions() {
-        val message = """
-            📱 DEVICE OWNER SETUP:
-            
-            Device Owner is required for factory reset control.
-            
-            🔧 Setup via ADB:
-            1. Connect device via USB
-            2. Enable USB Debugging
-            3. Run command:
-            
-            adb shell dpm set-device-owner com.uztech.phonelock/.DeviceAdminReceiver
-            
-            ⚠️ Requirements:
-            • Device must be unprovisioned (factory reset)
-            • No existing accounts
-            • May need to remove all users
-            
-            📝 Note: Test on emulator or dedicated device.
-        """.trimIndent()
-
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
     // ==============================================
@@ -766,7 +669,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Touch Lock Status
-        status.append(if (isTouchLocked) "🔒 Touch locked for Pending Payment. Please pay us.\nBksah : 01996914242 \nNagad : 01996914242 \n Thanks\n" else "✅ Touch Ready\n")
+        status.append(if (isTouchLocked) "🔒 Touch LOCKED (Pending Payment)\n" else "✅ Touch Ready\n")
+
+        if (isTouchLocked) {
+            status.append("📱 Bkash: 0188XXXXXXXXX\n")
+            status.append("💳 Nagad: 0131XXXXXXXXX\n")
+            status.append("📞 Contact: 017XXXXXXXX\n\n")
+        }
 
         // FCM Status
         status.append(if (fcmToken != null) "✅ FCM Token Available\n" else "❌ No FCM Token\n")
@@ -816,29 +725,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     // ==============================================
     // ACTIVITY Resume
     // ==============================================
     override fun onResume() {
         super.onResume()
-
         updateStatus()
-
-        // Check if lock expired
-        if (isTouchLocked && System.currentTimeMillis() - touchLockStartTime >= LOCK_DURATION) {
-            unlockTouchScreen()
-        }
 
         // Check if we need to restore lock from service
         val wasLocked = prefs.getBoolean("was_locked_before_reboot", false)
         if (wasLocked && !isTouchLocked) {
-            val lockExpiry = prefs.getLong("lock_expiry_time", 0)
-            if (lockExpiry > System.currentTimeMillis()) {
-                handler.postDelayed({
-                    lockTouchScreen()
-                }, 1500)
-            }
+            handler.postDelayed({
+                lockTouchScreen()
+            }, 1500)
         }
     }
 
@@ -859,12 +758,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-
         // Clean up
-        lockRunnable?.let { handler.removeCallbacks(it) }
         handler.removeCallbacksAndMessages(null)
-
     }
-
-
 }

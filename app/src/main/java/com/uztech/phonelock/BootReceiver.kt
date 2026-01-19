@@ -6,39 +6,39 @@ import android.content.Intent
 import android.util.Log
 
 class BootReceiver : BroadcastReceiver() {
-
     companion object {
-        private const val TAG = "BootReceiver"
+        const val TAG = "BootReceiver"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
-        Log.d(TAG, "📱 Boot receiver triggered: $action")
+        Log.d(TAG, "Boot received with action: $action")
 
         when (action) {
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_LOCKED_BOOT_COMPLETED,
             "android.intent.action.QUICKBOOT_POWERON" -> {
-                Log.d(TAG, "✅ Device booted - Starting PhoneLock")
+                Log.d(TAG, "Device rebooted, starting lock service...")
 
-                // Start foreground service
-                ForegroundNotificationService.startService(context)
+                // Check if lock was active before reboot
+                val prefs = context.getSharedPreferences(
+                    MainActivity.PREFS_NAME,
+                    Context.MODE_PRIVATE
+                )
+                val wasLocked = prefs.getBoolean("was_locked_before_reboot", false)
 
-                // Start MainActivity
-                val launchIntent = Intent(context, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    putExtra("from_boot", true)
+                if (wasLocked) {
+                    Log.d(TAG, "Lock was active before reboot, restoring...")
+                    // Start persistent service to restore lock
+                    val serviceIntent = Intent(context, PersistentLockService::class.java)
+                    serviceIntent.action = PersistentLockService.ACTION_RESTORE_LOCK
+
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent)
+                    } else {
+                        context.startService(serviceIntent)
+                    }
                 }
-                context.startActivity(launchIntent)
-            }
-
-            Intent.ACTION_MY_PACKAGE_REPLACED -> {
-                Log.d(TAG, "📱 App updated - Restarting services")
-                ForegroundNotificationService.startService(context)
-            }
-
-            Intent.ACTION_REBOOT -> {
-                Log.d(TAG, "🔄 Device rebooting")
             }
         }
     }

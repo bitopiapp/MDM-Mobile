@@ -99,12 +99,6 @@
                 android:layout_marginBottom="16dp"
                 android:backgroundTint="#2196F3" />
 
-
-
-
-
-
-
         </LinearLayout>
     </ScrollView>
 

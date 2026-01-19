@@ -50,6 +50,14 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
+
+    // For WorkManager (optional for more robust scheduling)
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
+// For lifecycle aware components
+    implementation("androidx.lifecycle:lifecycle-service:2.6.2")
+
+
+
     // AndroidX + UI
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

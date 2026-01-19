@@ -99,9 +99,28 @@ class MainActivity : AppCompatActivity() {
 
         // Check permissions
         checkPermissions()
+
+        // Check if lock should be restored from previous session
+        checkAndRestoreLockState()
     }
 
 
+    private fun checkAndRestoreLockState() {
+        val wasLocked = prefs.getBoolean("was_locked_before_reboot", false)
+        val lockExpiryTime = prefs.getLong("lock_expiry_time", 0)
+        val currentTime = System.currentTimeMillis()
+
+        if (wasLocked && lockExpiryTime > currentTime) {
+            // Lock was active and not expired - restore it
+            handler.postDelayed({
+                lockTouchScreen()
+            }, 2000) // Delay to ensure UI is ready
+        } else if (wasLocked && lockExpiryTime <= currentTime) {
+            // Lock was active but expired - clear state
+            prefs.edit().putBoolean("was_locked_before_reboot", false).apply()
+            unlockTouchScreen()
+        }
+    }
 
     private fun checkPermissions() {
         if (!checkOverlayPermission()) {
@@ -147,14 +166,14 @@ class MainActivity : AppCompatActivity() {
         val lowerBody = body.lowercase(Locale.getDefault())
 
         when { lowerBody.contains("account status is now active") -> {
-                Log.d(FCM_LOG_TAG, "✅ Found ACTIVE command - LOCKING SCREEN")
-                handler.postDelayed({
-                    if (lockTouchScreen()) {
-                        Toast.makeText(this, "🔒 Screen locked: Account is Active", Toast.LENGTH_LONG).show()
-                    }
-                }, 1000)
-            }
-                    lowerBody.contains("account status is now inactive") -> {
+            Log.d(FCM_LOG_TAG, "✅ Found ACTIVE command - LOCKING SCREEN")
+            handler.postDelayed({
+                if (lockTouchScreen()) {
+                    Toast.makeText(this, "🔒 Screen locked: Account is Active", Toast.LENGTH_LONG).show()
+                }
+            }, 1000)
+        }
+            lowerBody.contains("account status is now inactive") -> {
                 Log.d(FCM_LOG_TAG, "✅ Found INACTIVE command - UNLOCKING SCREEN")
                 handler.postDelayed({
                     if (unlockTouchScreen()) {
@@ -426,9 +445,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ==============================================
-    // TOUCH LOCK FUNCTIONS
+    // TOUCH LOCK FUNCTIONS (REBOOT PROOF)
     // ==============================================
-
     fun lockTouchScreen(): Boolean {
         if (!checkOverlayPermission()) {
             requestOverlayPermission()
@@ -436,29 +454,49 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (isTouchLocked) {
-            Toast.makeText(this, "Already locked. Unlocks in ${getRemainingTime()}s", Toast.LENGTH_SHORT).show()
+            val remainingTime = getRemainingTime()
+            Toast.makeText(this, "Already locked. Unlocks in ${remainingTime}s", Toast.LENGTH_SHORT).show()
             return false
         }
 
         try {
+            // Start persistent lock service
+            startPersistentLockService()
+
+            // Apply lock
             lockManager.lockTouchScreen()
             vibratePhone(200)
-            Toast.makeText(this, "Touch locked for Pending Payment. Please pay us.\nBksah : 0188XXXXXXXXX \n Thanks", Toast.LENGTH_SHORT).show()
+
+            Toast.makeText(this,
+                "🔒 Touch locked for Pending Payment.\n" +
+                        "Please contact for payment.\n" +
+                        "Thanks",
+                Toast.LENGTH_SHORT
+            ).show()
 
             isTouchLocked = true
             touchLockStartTime = System.currentTimeMillis()
 
+            // Save lock state for reboot recovery
+            val expiryTime = System.currentTimeMillis() + LOCK_DURATION
+            prefs.edit().apply {
+                putBoolean("was_locked_before_reboot", true)
+                putLong("lock_expiry_time", expiryTime)
+                putLong("lock_start_time", touchLockStartTime)
+                apply()
+            }
+
+            // Schedule auto-unlock
             lockRunnable = Runnable {
                 unlockTouchScreen()
-                Toast.makeText(applicationContext, "Auto-unlocked", Toast.LENGTH_SHORT).show()
+                Toast.makeText(applicationContext, "⏰ Auto-unlocked after ${LOCK_DURATION / 60000} minutes", Toast.LENGTH_SHORT).show()
             }
             handler.postDelayed(lockRunnable!!, LOCK_DURATION)
 
             updateStatus()
             return true
-
         } catch (e: Exception) {
-            Toast.makeText(this, "Lock failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "❌ Lock failed: ${e.message}", Toast.LENGTH_SHORT).show()
             isTouchLocked = false
             return false
         }
@@ -471,23 +509,69 @@ class MainActivity : AppCompatActivity() {
         }
 
         try {
+            // Stop persistent lock service
+            stopPersistentLockService()
+            // Remove lock
             lockManager.unlockTouchScreen()
             vibratePhone(100)
             isTouchLocked = false
             lockRunnable?.let { handler.removeCallbacks(it) }
             lockRunnable = null
+
+
+
+            // Clear lock state
+            prefs.edit().apply {
+                putBoolean("was_locked_before_reboot", false)
+                remove("lock_expiry_time")
+                remove("lock_start_time")
+                apply()
+            }
+
             updateStatus()
             return true
 
         } catch (e: Exception) {
-            Toast.makeText(this, "Unlock failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "❌ Unlock failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            // Force clear state even if unlock fails
             isTouchLocked = false
             lockRunnable = null
+            prefs.edit().putBoolean("was_locked_before_reboot", false).apply()
+
             updateStatus()
             return false
         }
     }
 
+
+    private fun startPersistentLockService() {
+        try {
+            val serviceIntent = Intent(this, PersistentLockService::class.java)
+            serviceIntent.action = PersistentLockService.ACTION_START_LOCK
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+
+        } catch (e: Exception) {
+
+        }
+    }
+
+
+
+    private fun stopPersistentLockService() {
+        try {
+            val serviceIntent = Intent(this, PersistentLockService::class.java)
+            serviceIntent.action = PersistentLockService.ACTION_STOP_LOCK
+            startService(serviceIntent)
+
+        } catch (e: Exception) {
+
+        }
+    }
     private fun getRemainingTime(): Long {
         if (!isTouchLocked) return 0
         val elapsed = System.currentTimeMillis() - touchLockStartTime
@@ -510,7 +594,7 @@ class MainActivity : AppCompatActivity() {
             )
             try {
                 startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST)
-                Toast.makeText(this, "Enable 'Display over other apps'", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Please enable 'Display over other apps' permission", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 val intentFallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = android.net.Uri.parse("package:$packageName")
@@ -682,7 +766,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Touch Lock Status
-        status.append(if (isTouchLocked) "🔒 Touch locked for Pending Payment. Please pay us.\nBksah : 0188XXXXXXXXX \n Thanks\n" else "✅ Touch Ready\n")
+        status.append(if (isTouchLocked) "🔒 Touch locked for Pending Payment. Please pay us.\nBksah : 01996914242 \nNagad : 01996914242 \n Thanks\n" else "✅ Touch Ready\n")
 
         // FCM Status
         status.append(if (fcmToken != null) "✅ FCM Token Available\n" else "❌ No FCM Token\n")
@@ -698,6 +782,9 @@ class MainActivity : AppCompatActivity() {
         tvStatus.text = status.toString()
     }
 
+    // ==============================================
+    // ACTIVITY LIFECYCLE
+    // ==============================================
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -714,6 +801,13 @@ class MainActivity : AppCompatActivity() {
             OVERLAY_PERMISSION_REQUEST -> {
                 if (checkOverlayPermission()) {
                     Toast.makeText(this, "✅ Overlay permission granted", Toast.LENGTH_SHORT).show()
+
+                    // Try to lock again if it was attempted before permission
+                    if (prefs.getBoolean("was_locked_before_reboot", false)) {
+                        handler.postDelayed({
+                            lockTouchScreen()
+                        }, 1000)
+                    }
                 } else {
                     Toast.makeText(this, "❌ Overlay permission denied", Toast.LENGTH_SHORT).show()
                 }
@@ -722,12 +816,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
+    // ==============================================
+    // ACTIVITY Resume
+    // ==============================================
     override fun onResume() {
         super.onResume()
+
         updateStatus()
 
+        // Check if lock expired
         if (isTouchLocked && System.currentTimeMillis() - touchLockStartTime >= LOCK_DURATION) {
             unlockTouchScreen()
+        }
+
+        // Check if we need to restore lock from service
+        val wasLocked = prefs.getBoolean("was_locked_before_reboot", false)
+        if (wasLocked && !isTouchLocked) {
+            val lockExpiry = prefs.getLong("lock_expiry_time", 0)
+            if (lockExpiry > System.currentTimeMillis()) {
+                handler.postDelayed({
+                    lockTouchScreen()
+                }, 1500)
+            }
         }
     }
 
@@ -748,8 +859,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        unlockTouchScreen()
+
+        // Clean up
+        lockRunnable?.let { handler.removeCallbacks(it) }
         handler.removeCallbacksAndMessages(null)
+
     }
 
 

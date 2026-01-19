@@ -1,14 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <device-admin xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-policies>
+        <!-- Basic policies -->
         <limit-password />
         <watch-login />
         <reset-password />
         <force-lock />
         <wipe-data />
+
+        <!-- Device owner specific policies -->
         <expire-password />
         <encrypted-storage />
         <disable-camera />
         <disable-keyguard-features />
+
+        <!-- Factory reset control -->
+        <set-global-proxy />
+        <set-restrictions-provider />
+
+        <!-- For Android 8.0+ -->
+        <set-user-restrictions />
+        <set-cross-profile-calendar-policy />
+        <set-cross-profile-contacts-policy />
+
+        <!-- For password reset -->
+        <set-keyguard-features />
+        <set-password-quality />
+        <set-password-min-length />
+
+        <!-- For device owner -->
+        <set-permission-policy />
+        <set-security-logging-enabled />
     </uses-policies>
 </device-admin>
+
+
+
+
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<device-admin xmlns:android="http://schemas.android.com/apk/res/android">-->
+<!--    <uses-policies>-->
+<!--        <limit-password />-->
+<!--        <watch-login />-->
+<!--        <reset-password />-->
+<!--        <force-lock />-->
+<!--        <wipe-data />-->
+<!--        <expire-password />-->
+<!--        <encrypted-storage />-->
+<!--        <disable-camera />-->
+<!--        <disable-keyguard-features />-->
+<!--    </uses-policies>-->
+<!--</device-admin>-->

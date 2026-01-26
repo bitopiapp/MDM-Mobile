@@ -80,6 +80,33 @@
                 android:backgroundTint="#FF9800" />
 
 
+            <Button
+                android:id="@+id/enableFactoryReset"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Enable Factory Reset"
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp"
+                android:backgroundTint="#FF9800" />
+
+            <!-- New Overlay Control Buttons -->
+            <Button
+                android:id="@+id/lockTask"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#FF5252"
+                android:text="🔒 Lock Task"
+                android:textColor="@android:color/white" />
+            <Button
+                android:id="@+id/unlockTask"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#FF5252"
+                android:text="unlockTask"
+                android:textColor="@android:color/white" />
+
 
             <!-- FCM Section -->
             <TextView
@@ -98,18 +125,6 @@
                 android:textSize="14sp"
                 android:layout_marginBottom="16dp"
                 android:backgroundTint="#2196F3" />
-
-
-            <!-- New Overlay Control Buttons -->
-            <Button
-                android:id="@+id/btnOverlayPermanentOn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="#FF5252"
-                android:text="🔒 Enable Permanent Overlay"
-                android:textColor="@android:color/white" />
-
 
         </LinearLayout>
     </ScrollView>

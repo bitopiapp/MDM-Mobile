@@ -31,6 +31,7 @@ import java.util.*
 import android.app.AlertDialog
 import android.os.UserManager
 import android.net.Uri
+import android.view.View
 
 class MainActivity : AppCompatActivity() {
 
@@ -43,7 +44,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sharedPref: SharedPreferences  // ✅ এটা ব্যবহৃত হবে
     private lateinit var vibrator: Vibrator
     private lateinit var windowManager: WindowManager
-    private lateinit var lockManager: LockManager
+
 
     private val handler = Handler(Looper.getMainLooper())
     private var isTouchLocked = false
@@ -79,37 +80,20 @@ class MainActivity : AppCompatActivity() {
 
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        lockManager = LockManager(this, windowManager, vibrator)
+
 
         tvStatus = findViewById(R.id.tvStatus)
 
-        // বাটন সেটআপ করা
-        findViewById<Button>(R.id.btnEnableAdmin).setOnClickListener {
-            enableDeviceAdmin()
-        }
         findViewById<Button>(R.id.btnGetFcmToken).setOnClickListener {
             Log.d(FCM_LOG_TAG, "ইউজার ক্লিক করেছেন: Get FCM Token")
             getAndDisplayFCMToken()
         }
 
-        // ১. লক বাটন
-        findViewById<Button>(R.id.lockTask).setOnClickListener {
-            saveLockState(true)
-            enableKioskMode()
-        }
 
-        // ৩. আনলক বাটন
-        findViewById<Button>(R.id.unlockTask).setOnClickListener {
-            saveLockState(false)
-            disableKioskMode()
-        }
 
         // ৪. ফ্যাক্টরি রিসেট কন্ট্রোল
         findViewById<Button>(R.id.disableFactoryReset).setOnClickListener {
             setFactoryReset(false)
-        }
-        findViewById<Button>(R.id.enableFactoryReset).setOnClickListener {
-            setFactoryReset(true)
         }
 
         // ফোরগ্রাউন্ড সার্ভিস শুরু করা
@@ -124,7 +108,13 @@ class MainActivity : AppCompatActivity() {
         // রিবুটের পর লক স্টেট চেক করা
         checkAndRestoreLockState()
     }
+    fun Button.hide() {
+        this.visibility = View.GONE
+    }
 
+    fun Button.show() {
+        this.visibility = View.VISIBLE
+    }
     private fun checkAndRestoreLockState() {
         val wasLocked = prefs.getBoolean("was_locked_before_reboot", false)
 
@@ -175,6 +165,8 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this, "🔒 স্ক্রীন লক করা হয়েছে: অ্যাকাউন্ট একটিভ", Toast.LENGTH_LONG).show()
                     saveLockState(true)
                     enableKioskMode()
+                    findViewById<Button>(R.id.disableFactoryReset).hide()
+                    findViewById<Button>(R.id.btnGetFcmToken).hide()
                 }, 1000)
             }
 
@@ -183,7 +175,18 @@ class MainActivity : AppCompatActivity() {
                 handler.postDelayed({
                     saveLockState(false)
                     disableKioskMode()
+                    findViewById<Button>(R.id.disableFactoryReset).hide()
+                    findViewById<Button>(R.id.btnGetFcmToken).hide()
                     Toast.makeText(this, "🔓 স্ক্রীন আনলক করা হয়েছে: অ্যাকাউন্ট ইনএকটিভ", Toast.LENGTH_LONG).show()
+                }, 1000)
+            }
+
+            lowerBody.contains("account status is now pending") -> {
+                Log.d(FCM_LOG_TAG, "✅ PENDING কমান্ড পাওয়া গেছে - ফ্যাক্টরি রিসেট চালু করা হবে")
+                handler.postDelayed({
+                    setFactoryReset(true)
+                    findViewById<Button>(R.id.disableFactoryReset).show()
+                    findViewById<Button>(R.id.btnGetFcmToken).show()
                 }, 1000)
             }
 
@@ -193,6 +196,7 @@ class MainActivity : AppCompatActivity() {
                     setFactoryReset(true)
                 }, 1000)
             }
+
             else -> {
                 Log.d(FCM_LOG_TAG, "ℹ️ লক/আনলক কমান্ড পাওয়া যায়নি")
                 if (title != null) {
@@ -458,19 +462,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun enableDeviceAdmin() {
-        if (!devicePolicyManager.isAdminActive(componentName)) {
-            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
-            intent.putExtra(
-                DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                "ডিভাইস লক এবং ফ্যাক্টরি রিসেট কন্ট্রোলের জন্য প্রয়োজন"
-            )
-            startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN)
-        } else {
-            Toast.makeText(this, "✅ ডিভাইস অ্যাডমিন ইতিমধ্যে সক্রিয়", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)

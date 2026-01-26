@@ -42,70 +42,6 @@
                 android:padding="16dp"
                 android:lineSpacingExtra="4dp" />
 
-            <!-- Device Admin Section -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🔐 Device Admin"
-                android:textSize="16sp"
-                android:textColor="#FF5722"
-                android:layout_marginBottom="8dp" />
-
-            <Button
-                android:id="@+id/btnEnableAdmin"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Enable Device Admin"
-                android:textSize="14sp"
-                android:layout_marginBottom="12dp"
-                android:backgroundTint="#FF5722" />
-
-
-            <!-- Factory Reset Section -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="⚙️ Factory Reset Control"
-                android:textSize="16sp"
-                android:textColor="#2196F3"
-                android:layout_marginBottom="8dp" />
-
-            <Button
-                android:id="@+id/disableFactoryReset"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Disable Factory Reset"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp"
-                android:backgroundTint="#FF9800" />
-
-
-            <Button
-                android:id="@+id/enableFactoryReset"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Enable Factory Reset"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp"
-                android:backgroundTint="#FF9800" />
-
-            <!-- New Overlay Control Buttons -->
-            <Button
-                android:id="@+id/lockTask"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="#FF5252"
-                android:text="🔒 Lock Task"
-                android:textColor="@android:color/white" />
-            <Button
-                android:id="@+id/unlockTask"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="#FF5252"
-                android:text="unlockTask"
-                android:textColor="@android:color/white" />
 
 
             <!-- FCM Section -->
@@ -125,6 +61,25 @@
                 android:textSize="14sp"
                 android:layout_marginBottom="16dp"
                 android:backgroundTint="#2196F3" />
+
+
+            <!-- Factory Reset Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⚙️ Factory Reset Control"
+                android:textSize="16sp"
+                android:textColor="#2196F3"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/disableFactoryReset"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Disable Factory Reset"
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp"
+                android:backgroundTint="#FF9800" />
 
         </LinearLayout>
     </ScrollView>

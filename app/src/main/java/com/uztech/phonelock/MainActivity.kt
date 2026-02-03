@@ -96,6 +96,28 @@ class MainActivity : AppCompatActivity() {
             setFactoryReset(false)
         }
 
+        // 5. ফ্যাক্টরি রিসেট কন্ট্রোল
+        findViewById<Button>(R.id.enableFactoryReset).setOnClickListener {
+            setFactoryReset(true)
+        }
+
+        // 5. ফ্যাক্টরি রিসেট কন্ট্রোল
+        findViewById<Button>(R.id.lockFactoryReset).setOnClickListener {
+            saveLockState(true)
+            enableKioskMode()
+        }
+
+        // 5. ফ্যাক্টরি রিসেট কন্ট্রোল
+        findViewById<Button>(R.id.unlockFactoryReset).setOnClickListener {
+            saveLockState(false)
+            disableKioskMode()
+        }
+
+        // 6. open chrome
+        findViewById<Button>(R.id.permissionforChrom).setOnClickListener {
+            openChromeOnly()
+        }
+
         // ফোরগ্রাউন্ড সার্ভিস শুরু করা
         startForegroundServiceForFCM()
 
@@ -108,6 +130,56 @@ class MainActivity : AppCompatActivity() {
         // রিবুটের পর লক স্টেট চেক করা
         checkAndRestoreLockState()
     }
+
+
+    // ==============================================
+// ✅ শুধু Chrome ওপেন করা
+// ==============================================
+
+    private fun openChromeOnly() {
+        try {
+            // Chrome এর প্যাকেজ নাম
+            val chromePackage = "com.example.counter_app"
+
+            // Chrome লঞ্চ করার Intent পাওয়ার চেষ্টা
+            val chromeIntent = packageManager.getLaunchIntentForPackage(chromePackage)
+
+            if (chromeIntent != null) {
+                // Chrome ওপেন করা
+                chromeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(chromeIntent)
+            } else {
+                // Chrome ইনস্টল নেই
+                Toast.makeText(
+                    this,
+                    "❌ Chrome ব্রাউজার ইনস্টল নেই",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        } catch (e: Exception) {
+            // কোনো ত্রুটি হলে
+            Toast.makeText(
+                this,
+                "❌ Chrome ওপেন করা যায়নি",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     fun Button.hide() {
         this.visibility = View.GONE
     }
@@ -162,7 +234,7 @@ class MainActivity : AppCompatActivity() {
             lowerBody.contains("account status is now active") -> {
                 Log.d(FCM_LOG_TAG, "✅ ACTIVE কমান্ড পাওয়া গেছে - স্ক্রীন লক করা হবে")
                 handler.postDelayed({
-                    Toast.makeText(this, "🔒 স্ক্রীন লক করা হয়েছে: অ্যাকাউন্ট একটিভ", Toast.LENGTH_LONG).show()
+                //    Toast.makeText(this, "🔒 স্ক্রীন লক করা হয়েছে: অ্যাকাউন্ট একটিভ", Toast.LENGTH_LONG).show()
                     saveLockState(true)
                     enableKioskMode()
                     findViewById<Button>(R.id.disableFactoryReset).hide()

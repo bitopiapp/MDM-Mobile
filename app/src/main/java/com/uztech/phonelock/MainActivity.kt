@@ -102,13 +102,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 5. ফ্যাক্টরি রিসেট কন্ট্রোল
-        findViewById<Button>(R.id.lockFactoryReset).setOnClickListener {
+        findViewById<Button>(R.id.lockPhone).setOnClickListener {
             saveLockState(true)
             enableKioskMode()
         }
 
         // 5. ফ্যাক্টরি রিসেট কন্ট্রোল
-        findViewById<Button>(R.id.unlockFactoryReset).setOnClickListener {
+        findViewById<Button>(R.id.unlockPhone).setOnClickListener {
             saveLockState(false)
             disableKioskMode()
         }

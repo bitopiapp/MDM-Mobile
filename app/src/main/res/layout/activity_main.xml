@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="#121212"
+    android:background="#FFFFFF"
     tools:context=".MainActivity">
 
     <TextView
@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:text="📱 PhoneLock"
         android:textSize="24sp"
-        android:textColor="#FFFFFF"
+        android:textColor="#000000"
         android:gravity="center"
         android:layout_marginBottom="24dp"
         android:textStyle="bold" />
@@ -45,14 +45,6 @@
 
 
             <!-- FCM Section -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="📡 Firebase Cloud Messaging"
-                android:textSize="16sp"
-                android:textColor="#00BCD4"
-                android:layout_marginBottom="8dp" />
-
             <Button
                 android:id="@+id/btnGetFcmToken"
                 android:layout_width="match_parent"
@@ -60,10 +52,7 @@
                 android:text="Get FCM Token"
                 android:textSize="14sp"
                 android:layout_marginBottom="16dp"
-                android:backgroundTint="#2196F3" />
-
-
-
+                android:backgroundTint="#FF9800" />
 
             <!-- Factory Reset Section -->
             <TextView
@@ -93,9 +82,19 @@
                 android:layout_marginBottom="8dp"
                 android:backgroundTint="#FF9800" />
 
+            <!-- Device Control -->
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Device Control"
+                android:textSize="16sp"
+                android:textColor="#2196F3"
+                android:layout_marginBottom="8dp" />
+
 
             <Button
-                android:id="@+id/lockFactoryReset"
+                android:id="@+id/lockPhone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Lock"
@@ -105,7 +104,7 @@
 
 
             <Button
-                android:id="@+id/unlockFactoryReset"
+                android:id="@+id/unlockPhone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="UnLock"

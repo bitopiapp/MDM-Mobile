@@ -33,7 +33,7 @@
         tools:ignore="ProtectedPermissions" />
 
     <queries>
-        <package android:name="com.example.counter_app" />
+        <package android:name="com.android.chrome" />
     </queries>
 
     <application

@@ -930,10 +930,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
                 // Determine action based on body
                 when {
-                    body.contains("active", ignoreCase = true) -> {
+                    body.contains("Lock device", ignoreCase = true) -> {
                         putExtra("fcm_action", "lock")
                     }
-                    body.contains("inactive", ignoreCase = true) -> {
+                    body.contains("Active Device", ignoreCase = true) -> {
                         putExtra("fcm_action", "unlock")
                     }
                 }
@@ -992,10 +992,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
                 // Determine action based on body
                 when {
-                    body.contains("active", ignoreCase = true) -> {
+                    body.contains("Lock Device", ignoreCase = true) -> {
                         putExtra("fcm_action", "lock")
                     }
-                    body.contains("inactive", ignoreCase = true) -> {
+                    body.contains("Active Device", ignoreCase = true) -> {
                         putExtra("fcm_action", "unlock")
                     }
                 }

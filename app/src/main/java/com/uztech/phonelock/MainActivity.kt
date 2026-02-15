@@ -120,7 +120,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openChromeOnly() {
         try {
-            val chromePackage = "com.example.counter_app"
+            val chromePackage = "com.android.chrome"
             val chromeIntent = packageManager.getLaunchIntentForPackage(chromePackage)
 
             if (chromeIntent != null) {
@@ -187,17 +187,7 @@ class MainActivity : AppCompatActivity() {
         val lowerBody = body.lowercase(Locale.getDefault())
 
         when {
-            lowerBody.contains("account status is now active") -> {
-                Log.d(FCM_LOG_TAG, "ACTIVE command found - locking screen")
-                handler.postDelayed({
-                    saveLockState(true)
-                    enableKioskMode()
-                    findViewById<Button>(R.id.disableFactoryReset).hide()
-                    findViewById<Button>(R.id.btnGetFcmToken).hide()
-                }, 1000)
-            }
-
-            lowerBody.contains("account status is now inactive") -> {
+            lowerBody.contains("active device") -> {
                 Log.d(FCM_LOG_TAG, "INACTIVE command found - unlocking screen")
                 handler.postDelayed({
                     saveLockState(false)
@@ -208,7 +198,28 @@ class MainActivity : AppCompatActivity() {
                 }, 1000)
             }
 
-            lowerBody.contains("account status is now pending") -> {
+            lowerBody.contains("lock device") -> {
+                Log.d(FCM_LOG_TAG, "ACTIVE command found - locking screen")
+                handler.postDelayed({
+                    saveLockState(true)
+                    enableKioskMode()
+                    findViewById<Button>(R.id.disableFactoryReset).hide()
+                    findViewById<Button>(R.id.btnGetFcmToken).hide()
+                }, 1000)
+            }
+
+
+
+            lowerBody.contains("factory reset disable") -> {
+                Log.d(FCM_LOG_TAG, "PENDING command found - enabling factory reset")
+                handler.postDelayed({
+                    setFactoryReset(false)
+                    findViewById<Button>(R.id.disableFactoryReset).hide()
+                    findViewById<Button>(R.id.btnGetFcmToken).hide()
+                }, 1000)
+            }
+
+            lowerBody.contains("factory reset enable") -> {
                 Log.d(FCM_LOG_TAG, "PENDING command found - enabling factory reset")
                 handler.postDelayed({
                     setFactoryReset(true)
@@ -354,7 +365,7 @@ class MainActivity : AppCompatActivity() {
 //
 //                sendPostRequest(registerUrl)
 
-                val registerUrl = "https://uztech.juimart.com/create-user?name=Uzzal Biswassdfsdf&email=$deviceId&deviceToken=$token"
+                val registerUrl = "https://uztech.juimart.com/create-user?name=Uzzal Biswas - ${Build.MANUFACTURER}&email=${deviceId}@gmail.com&deviceToken=$token"
                 Log.d("RequestURL", "Register URL: $registerUrl")
 
                 sendPostRequest(registerUrl)

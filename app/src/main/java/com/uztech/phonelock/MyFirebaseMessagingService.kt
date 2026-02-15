@@ -863,13 +863,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        Log.e(TAG, "Wake lock error $remoteMessage")
+        Log.e(TAG, "Wake ======= ${remoteMessage.data}")
         // Acquire wake lock to prevent device sleep
         acquireWakeLock()
 
         // Get notification data
-        val title = remoteMessage.data["title"].toString()
-        val body = remoteMessage.data["message"].toString()
+        val title = remoteMessage.data["status"].toString()
+        val body = remoteMessage.data["body"].toString()
 
         // Log to Logcat
         logFCMMessage(title, body, remoteMessage)

@@ -1,38 +1,28 @@
 package com.uztech.phonelock
 
-import android.Manifest
-import android.annotation.SuppressLint
-import android.content.pm.PackageManager
-import android.telephony.TelephonyManager
-import android.os.Build
-import androidx.core.content.ContextCompat
-import java.net.HttpURLConnection
-import java.net.URL
 import android.app.Activity
 import android.app.ActivityManager
-import android.app.AppOpsManager
 import android.app.admin.DevicePolicyManager
+import android.app.admin.FactoryResetProtectionPolicy
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.*
 import android.provider.Settings
 import android.util.Log
+import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.*
-import android.app.AlertDialog
-import android.os.UserManager
-import android.net.Uri
-import android.view.View
-import android.app.admin.FactoryResetProtectionPolicy
 
 class MainActivity : AppCompatActivity() {
 
@@ -118,6 +108,10 @@ class MainActivity : AppCompatActivity() {
         checkFCMStatus()
         checkAndRestoreLockState()
     }
+
+
+
+
 
 
     // ==============================================
@@ -355,15 +349,20 @@ class MainActivity : AppCompatActivity() {
     private fun sendRegistrationData(deviceId: String, token: String) {
         Thread {
             try {
-                val registerUrl = "https://ephonelocker.info/api/register?imei_number=$deviceId&name=${Build.MANUFACTURER} ${Build.MODEL}&phone=01700000009&email=$deviceId@example.com&address=Dhaka, Bangladesh&nominee_name=Nominee Name&nominee_phone=01800000009&total_amount=50000&down_payment=10000&interval_type=1&interval_value=6&payable_amount=40000&per_installment=3333.33&bill_date=2025-01-15&admin_id=2"
+//                val registerUrl = "https://ephonelocker.info/api/register?imei_number=$deviceId&name=${Build.MANUFACTURER} ${Build.MODEL}&phone=01700000009&email=$deviceId@example.com&address=Dhaka, Bangladesh&nominee_name=Nominee Name&nominee_phone=01800000009&total_amount=50000&down_payment=10000&interval_type=1&interval_value=6&payable_amount=40000&per_installment=3333.33&bill_date=2025-01-15&admin_id=2"
+//                Log.d("RequestURL", "Register URL: $registerUrl")
+//
+//                sendPostRequest(registerUrl)
+
+                val registerUrl = "https://uztech.juimart.com/create-user?name=Uzzal Biswassdfsdf&email=$deviceId&deviceToken=$token"
                 Log.d("RequestURL", "Register URL: $registerUrl")
 
                 sendPostRequest(registerUrl)
 
-                val tokenUrl = "https://ephonelocker.info/api/save-firebase-token?token=$token&imei=$deviceId"
-                Log.d("RequestURL", "Token URL: $tokenUrl")
-
-                sendPostRequest(tokenUrl)
+//                val tokenUrl = "https://ephonelocker.info/api/save-firebase-token?token=$token&imei=$deviceId"
+//                Log.d("RequestURL", "Token URL: $tokenUrl")
+//
+//                sendPostRequest(tokenUrl)
 
             } catch (e: Exception) {
                 Log.e("Registration", "Error: ${e.message}")
@@ -379,7 +378,7 @@ class MainActivity : AppCompatActivity() {
         try {
             val urlObj = URL(urlString)
             val connection = urlObj.openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"
+            connection.requestMethod = "GET"
             connection.setRequestProperty("User-Agent", "Android-App")
             connection.setRequestProperty("Accept", "application/json")
             connection.connectTimeout = 10000

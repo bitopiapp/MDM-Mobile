@@ -12,7 +12,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="📱 PhoneLock"
+        android:text="📱MDM"
         android:textSize="24sp"
         android:textColor="#000000"
         android:gravity="center"
@@ -29,21 +29,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tvStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Status: Loading..."
-                android:textSize="14sp"
-                android:textColor="#CCCCCC"
-                android:gravity="start"
-                android:layout_marginBottom="16dp"
-                android:background="#1E1E1E"
-                android:padding="16dp"
-                android:lineSpacingExtra="4dp" />
-
-
-
             <!-- FCM Section -->
             <Button
                 android:id="@+id/btnGetFcmToken"
@@ -55,62 +40,62 @@
                 android:backgroundTint="#FF9800" />
 
             <!-- Factory Reset Section -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="⚙️ Factory Reset Control"
-                android:textSize="16sp"
-                android:textColor="#2196F3"
-                android:layout_marginBottom="8dp" />
+<!--            <TextView-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="⚙️ Factory Reset Control"-->
+<!--                android:textSize="16sp"-->
+<!--                android:textColor="#2196F3"-->
+<!--                android:layout_marginBottom="8dp" />-->
 
-            <Button
-                android:id="@+id/disableFactoryReset"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Disable Factory Reset"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp"
-                android:backgroundTint="#FF9800" />
+<!--            <Button-->
+<!--                android:id="@+id/disableFactoryReset"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Disable Factory Reset"-->
+<!--                android:textSize="14sp"-->
+<!--                android:layout_marginBottom="8dp"-->
+<!--                android:backgroundTint="#FF9800" />-->
 
 
-            <Button
-                android:id="@+id/enableFactoryReset"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Enable Factory Reset"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp"
-                android:backgroundTint="#FF9800" />
+<!--            <Button-->
+<!--                android:id="@+id/enableFactoryReset"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Enable Factory Reset"-->
+<!--                android:textSize="14sp"-->
+<!--                android:layout_marginBottom="8dp"-->
+<!--                android:backgroundTint="#FF9800" />-->
 
             <!-- Device Control -->
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Device Control"
-                android:textSize="16sp"
-                android:textColor="#2196F3"
-                android:layout_marginBottom="8dp" />
+<!--            <TextView-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Device Control"-->
+<!--                android:textSize="16sp"-->
+<!--                android:textColor="#2196F3"-->
+<!--                android:layout_marginBottom="8dp" />-->
 
 
-            <Button
-                android:id="@+id/lockPhone"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Lock"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp"
-                android:backgroundTint="#FF9800" />
+<!--            <Button-->
+<!--                android:id="@+id/lockPhone"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Lock"-->
+<!--                android:textSize="14sp"-->
+<!--                android:layout_marginBottom="8dp"-->
+<!--                android:backgroundTint="#FF9800" />-->
 
 
-            <Button
-                android:id="@+id/unlockPhone"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="UnLock"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp"
-                android:backgroundTint="#FF9800" />
+<!--            <Button-->
+<!--                android:id="@+id/unlockPhone"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="UnLock"-->
+<!--                android:textSize="14sp"-->
+<!--                android:layout_marginBottom="8dp"-->
+<!--                android:backgroundTint="#FF9800" />-->
 
 
             <Button

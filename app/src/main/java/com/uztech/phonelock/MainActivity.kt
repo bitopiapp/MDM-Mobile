@@ -72,32 +72,36 @@ class MainActivity : AppCompatActivity() {
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
 
-        tvStatus = findViewById(R.id.tvStatus)
-
-        findViewById<Button>(R.id.btnGetFcmToken).setOnClickListener {
+        val btnGetFcmToken = findViewById<Button>(R.id.btnGetFcmToken)
+        btnGetFcmToken.setOnClickListener {
             Log.d(FCM_LOG_TAG, "User clicked: Get FCM Token")
             getAndDisplayFCMToken()
         }
 
-
-
-        findViewById<Button>(R.id.disableFactoryReset).setOnClickListener {
-            setFactoryReset(false)
+        // Hide button if token already exists
+        if (getStoredToken() != null) {
+            btnGetFcmToken.hide()
         }
 
-        findViewById<Button>(R.id.enableFactoryReset).setOnClickListener {
-            setFactoryReset(true)
-        }
 
-        findViewById<Button>(R.id.lockPhone).setOnClickListener {
-            saveLockState(true)
-            enableKioskMode()
-        }
 
-        findViewById<Button>(R.id.unlockPhone).setOnClickListener {
-            saveLockState(false)
-            disableKioskMode()
-        }
+//        findViewById<Button>(R.id.disableFactoryReset).setOnClickListener {
+//            setFactoryReset(false)
+//        }
+//
+//        findViewById<Button>(R.id.enableFactoryReset).setOnClickListener {
+//            setFactoryReset(true)
+//        }
+//
+//        findViewById<Button>(R.id.lockPhone).setOnClickListener {
+//            saveLockState(true)
+//            enableKioskMode()
+//        }
+
+//        findViewById<Button>(R.id.unlockPhone).setOnClickListener {
+//            saveLockState(false)
+//            disableKioskMode()
+//        }
 
         findViewById<Button>(R.id.permissionforChrom).setOnClickListener {
             openChromeOnly()
@@ -192,7 +196,8 @@ class MainActivity : AppCompatActivity() {
                 handler.postDelayed({
                     saveLockState(false)
                     disableKioskMode()
-                    findViewById<Button>(R.id.disableFactoryReset).hide()
+                //    findViewById<Button>(R.id.disableFactoryReset).hide()
+//                    findViewById<Button>(R.id.unlockBtn).hide()
                     findViewById<Button>(R.id.btnGetFcmToken).hide()
                     Toast.makeText(this, "Screen unlocked: Account inactive", Toast.LENGTH_LONG).show()
                 }, 1000)
@@ -203,7 +208,8 @@ class MainActivity : AppCompatActivity() {
                 handler.postDelayed({
                     saveLockState(true)
                     enableKioskMode()
-                    findViewById<Button>(R.id.disableFactoryReset).hide()
+                //    findViewById<Button>(R.id.disableFactoryReset).hide()
+//                    findViewById<Button>(R.id.unlockBtn).hide()
                     findViewById<Button>(R.id.btnGetFcmToken).hide()
                 }, 1000)
             }
@@ -214,7 +220,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d(FCM_LOG_TAG, "PENDING command found - enabling factory reset")
                 handler.postDelayed({
                     setFactoryReset(false)
-                    findViewById<Button>(R.id.disableFactoryReset).hide()
+//                    findViewById<Button>(R.id.unlockBtn).hide()
                     findViewById<Button>(R.id.btnGetFcmToken).hide()
                 }, 1000)
             }
@@ -223,8 +229,9 @@ class MainActivity : AppCompatActivity() {
                 Log.d(FCM_LOG_TAG, "PENDING command found - enabling factory reset")
                 handler.postDelayed({
                     setFactoryReset(true)
-                    findViewById<Button>(R.id.disableFactoryReset).show()
-                    findViewById<Button>(R.id.btnGetFcmToken).show()
+                 //   findViewById<Button>(R.id.disableFactoryReset).show()
+//                    findViewById<Button>(R.id.unlockBtn).show()
+//                    findViewById<Button>(R.id.btnGetFcmToken).show()
                 }, 1000)
             }
 
@@ -308,6 +315,10 @@ class MainActivity : AppCompatActivity() {
         val token = getStoredToken()
         if (token != null) {
             Log.d(FCM_LOG_TAG, "Stored FCM token: ${token.take(20)}...")
+            // Ensure button is hidden if token is already stored
+            runOnUiThread {
+                findViewById<Button>(R.id.btnGetFcmToken).hide()
+            }
         } else {
             Log.d(FCM_LOG_TAG, "No FCM token stored")
         }
@@ -348,6 +359,9 @@ class MainActivity : AppCompatActivity() {
             sendRegistrationData(deviceId, token)
             saveToken(token)
 
+            // Hide the button on success
+            findViewById<Button>(R.id.btnGetFcmToken).hide()
+
             Toast.makeText(
                 this,
                 "Token saved! See full token in Logcat",
@@ -365,7 +379,7 @@ class MainActivity : AppCompatActivity() {
 //
 //                sendPostRequest(registerUrl)
 
-                val registerUrl = "https://uztech.juimart.com/create-user?name=Uzzal Biswas - ${Build.MANUFACTURER}&email=${deviceId}@gmail.com&deviceToken=$token"
+                val registerUrl = "https://uztech.juimart.com/create-device?name=Employee - ${Build.MANUFACTURER}-$deviceId&adminId=0&deviceToken=$token"
                 Log.d("RequestURL", "Register URL: $registerUrl")
 
                 sendPostRequest(registerUrl)
@@ -449,7 +463,8 @@ class MainActivity : AppCompatActivity() {
     private fun enableKioskMode() {
         if (isDeviceOwner()) {
             try {
-                dpm.setLockTaskPackages(adminComponent, arrayOf(packageName))
+             //   dpm.setLockTaskPackages(adminComponent, arrayOf(packageName))
+                dpm.setLockTaskPackages(adminComponent, arrayOf(packageName, "com.android.chrome"))
                 startLockTask()
                 isTouchLocked = true
                 saveLockState(true)

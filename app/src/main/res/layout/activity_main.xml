@@ -1,113 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#FFFFFF"
-    tools:context=".MainActivity">
+    android:background="#FFFFFF">
 
-    <TextView
+    <!-- AppBar/Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="📱MDM"
-        android:textSize="24sp"
-        android:textColor="#000000"
-        android:gravity="center"
-        android:layout_marginBottom="24dp"
-        android:textStyle="bold" />
+        android:layout_height="100dp"
+        android:background="#FF9800"
+        android:minHeight="?attr/actionBarSize"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <LinearLayout
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:text="📱 BITOPI - MDM"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_gravity="center"/>
 
-            <!-- FCM Section -->
-            <Button
-                android:id="@+id/btnGetFcmToken"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Get FCM Token"
-                android:textSize="14sp"
-                android:layout_marginBottom="16dp"
-                android:backgroundTint="#FF9800" />
+    </androidx.appcompat.widget.Toolbar>
 
-            <!-- Factory Reset Section -->
-<!--            <TextView-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="⚙️ Factory Reset Control"-->
-<!--                android:textSize="16sp"-->
-<!--                android:textColor="#2196F3"-->
-<!--                android:layout_marginBottom="8dp" />-->
+    <!-- Buttons container centered vertically -->
+    <LinearLayout
+        android:id="@+id/buttonsContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
 
-<!--            <Button-->
-<!--                android:id="@+id/disableFactoryReset"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="Disable Factory Reset"-->
-<!--                android:textSize="14sp"-->
-<!--                android:layout_marginBottom="8dp"-->
-<!--                android:backgroundTint="#FF9800" />-->
+        <Button
+            android:id="@+id/btnGetFcmToken"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="Get FCM Token"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp"
+            android:backgroundTint="#FF9800"
+            android:textColor="@android:color/white"/>
 
+        <Button
+            android:id="@+id/permissionforChrom"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="PPC"
+            android:textSize="14sp"
+            android:backgroundTint="#FF9800"
+            android:textColor="@android:color/white"/>
 
-<!--            <Button-->
-<!--                android:id="@+id/enableFactoryReset"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="Enable Factory Reset"-->
-<!--                android:textSize="14sp"-->
-<!--                android:layout_marginBottom="8dp"-->
-<!--                android:backgroundTint="#FF9800" />-->
+    </LinearLayout>
 
-            <!-- Device Control -->
-
-<!--            <TextView-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="Device Control"-->
-<!--                android:textSize="16sp"-->
-<!--                android:textColor="#2196F3"-->
-<!--                android:layout_marginBottom="8dp" />-->
-
-
-<!--            <Button-->
-<!--                android:id="@+id/lockPhone"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="Lock"-->
-<!--                android:textSize="14sp"-->
-<!--                android:layout_marginBottom="8dp"-->
-<!--                android:backgroundTint="#FF9800" />-->
-
-
-<!--            <Button-->
-<!--                android:id="@+id/unlockPhone"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="UnLock"-->
-<!--                android:textSize="14sp"-->
-<!--                android:layout_marginBottom="8dp"-->
-<!--                android:backgroundTint="#FF9800" />-->
-
-
-            <Button
-                android:id="@+id/permissionforChrom"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Chrome"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp"
-                android:backgroundTint="#FF9800" />
-
-        </LinearLayout>
-    </ScrollView>
-
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

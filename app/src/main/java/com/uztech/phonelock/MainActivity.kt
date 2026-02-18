@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openChromeOnly() {
         try {
-            val chromePackage = "com.android.chrome"
+            val chromePackage = "com.garmentsfactory.fabric_inspection_app"
             val chromeIntent = packageManager.getLaunchIntentForPackage(chromePackage)
 
             if (chromeIntent != null) {
@@ -459,7 +459,7 @@ class MainActivity : AppCompatActivity() {
         if (isDeviceOwner()) {
             try {
              //   dpm.setLockTaskPackages(adminComponent, arrayOf(packageName))
-                dpm.setLockTaskPackages(adminComponent, arrayOf(packageName, "com.android.chrome"))
+                dpm.setLockTaskPackages(adminComponent, arrayOf(packageName, "com.garmentsfactory.fabric_inspection_app"))
                 startLockTask()
                 isTouchLocked = true
                 saveLockState(true)

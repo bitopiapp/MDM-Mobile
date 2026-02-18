@@ -280,46 +280,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ==============================================
-    // Device Status to Server
-    // ==============================================
-
-    private fun sendStatusToServer() {
-        val status = getDeviceStatus()
-        val deviceId = Settings.Secure.getString(contentResolver,
-            Settings.Secure.ANDROID_ID) ?: "unknown"
-
-        val statusUrl = "https://ephonelocker.info/api/update-status?imei=$deviceId&status=${Uri.encode(status)}"
-
-        Thread {
-            try {
-                val urlObj = URL(statusUrl)
-                val connection = urlObj.openConnection() as HttpURLConnection
-                connection.requestMethod = "POST"
-                connection.setRequestProperty("User-Agent", "Android-App")
-
-                val responseCode = connection.responseCode
-                Log.d("StatusUpdate", "Response code: $responseCode")
-
-                if (responseCode == 200) {
-                    Log.d(FCM_LOG_TAG, "Status sent to server")
-                }
-            } catch (e: Exception) {
-                Log.e("StatusUpdate", "Error: ${e.message}")
-            }
-        }.start()
-    }
-
-    private fun getDeviceStatus(): String {
-        return StringBuilder().apply {
-            append("Device Owner: ${if (isDeviceOwner()) "YES" else "NO"}\n")
-            append("Device Admin: ${if (devicePolicyManager.isAdminActive(componentName)) "YES" else "NO"}\n")
-            append("Screen Lock: ${if (isTouchLocked) "LOCKED" else "UNLOCKED"}\n")
-            append("Overlay Permanent: ${if (prefs.getBoolean("overlay_permanent_enabled", false)) "YES" else "NO"}\n")
-            append("Factory Reset: ${if (prefs.getBoolean(KEY_FACTORY_RESET_DISABLED, false)) "LOCKED" else "UNLOCKED"}")
-        }.toString()
-    }
-
-    // ==============================================
     // Foreground Service
     // ==============================================
 
@@ -414,7 +374,7 @@ class MainActivity : AppCompatActivity() {
 //
 //                sendPostRequest(registerUrl)
 
-                val registerUrl = "https://uztech.juimart.com/create-device?name=Employee - ${Build.MANUFACTURER}-$deviceId&adminId=0&deviceToken=$token"
+                val registerUrl = "https://mdm.juimart.com/create-device?name=Employee - ${Build.MANUFACTURER}-$deviceId&adminId=0&deviceToken=$token"
                 Log.d("RequestURL", "Register URL: $registerUrl")
 
                 sendPostRequest(registerUrl)

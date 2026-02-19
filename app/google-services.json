@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "673722890455",
+    "project_id": "uztech",
+    "storage_bucket": "uztech.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:673722890455:android:b3a04173686ff6a6195892",
+        "android_client_info": {
+          "package_name": "com.uztech.phonelock"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvfR8qG-BZj74mzYTl7jToFaYdMh7toM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

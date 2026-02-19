@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"C:\\\\Users\\\\u.biswas\\\\StudioProjects\\\\Phone-Lock\\\\gradlew.bat\" -p \"C:\\\\Users\\\\u.biswas\\\\StudioProjects\\\\Phone-Lock\" assembleDebug)"
+    ]
+  }
+}

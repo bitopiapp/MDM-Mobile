@@ -23,6 +23,8 @@ import com.google.firebase.messaging.FirebaseMessaging
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.*
+import android.app.AlertDialog
+import android.os.UserManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -124,7 +126,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openChromeOnly() {
         try {
-            val chromePackage = "com.garmentsfactory.fabric_inspection_app"
+            val chromePackage = "com.android.chrome"
             val chromeIntent = packageManager.getLaunchIntentForPackage(chromePackage)
 
             if (chromeIntent != null) {
@@ -188,42 +190,19 @@ class MainActivity : AppCompatActivity() {
     private fun checkBodyForCommands(body: String, title: String?) {
         Log.d(FCM_LOG_TAG, "Analyzing notification: $body  $title")
 
-        val lowerTitle = title?.lowercase(Locale.getDefault()) ?: ""
         val lowerBody = body.lowercase(Locale.getDefault())
 
         when {
-            lowerTitle.contains("install_app") -> {
-                Log.d(FCM_LOG_TAG, "INSTALL_APP command found - APK URL: $body")
-                handler.postDelayed({
-                    Toast.makeText(this, "Downloading & installing app...", Toast.LENGTH_LONG).show()
-                    val installer = SilentInstaller(applicationContext)
-                    installer.downloadAndInstall(body, object : SilentInstaller.InstallCallback {
-                        override fun onDownloadStarted() {
-                            Log.d(FCM_LOG_TAG, "Download started")
-                        }
-                        override fun onDownloadProgress(percent: Int) {
-                            Log.d(FCM_LOG_TAG, "Download: $percent%")
-                        }
-                        override fun onDownloadComplete() {
-                            runOnUiThread {
-                                Toast.makeText(this@MainActivity, "Download complete, installing...", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                        override fun onInstallStarted() {
-                            Log.d(FCM_LOG_TAG, "Install started")
-                        }
-                        override fun onInstallSuccess(packageName: String?) {
-                            runOnUiThread {
-                                Toast.makeText(this@MainActivity, "Installed: $packageName", Toast.LENGTH_LONG).show()
-                            }
-                        }
-                        override fun onInstallFailed(error: String) {
-                            runOnUiThread {
-                                Toast.makeText(this@MainActivity, "Install failed: $error", Toast.LENGTH_LONG).show()
-                            }
-                        }
-                    })
-                }, 1000)
+            title?.contains("show-message") == true  -> {
+                Log.d(FCM_LOG_TAG, "SHOW MESSAGE command found")
+                runOnUiThread {
+                    AlertDialog.Builder(this)
+                        .setTitle("Notice")
+                        .setMessage(body.replace("show message", "", ignoreCase = true).trim())
+                        .setCancelable(false)
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
             }
 
             lowerBody.contains("active device") -> {
@@ -278,6 +257,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+
 
     // ==============================================
     // Foreground Service

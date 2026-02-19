@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:374512621165:android:750367a6a6dde7669dd164",
+        "android_client_info": {
+          "package_name": "com.bitopi.mdm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBj_MSAz-pJI5srL_KyrdcUFFR98k3DKgc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:374512621165:android:bdff46f35da28d169dd164",
         "android_client_info": {
           "package_name": "com.uztech.phonelock"

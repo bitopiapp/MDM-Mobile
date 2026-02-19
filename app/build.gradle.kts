@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.uztech.phonelock"
+    namespace = "com.bitopi.mdm"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.uztech.phonelock"
+        applicationId = "com.bitopi.mdm"
         minSdk = 29
         targetSdk = 36
         versionCode = 1

@@ -23,7 +23,7 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="com.uztech.phonelock" />
+                  <option name="appId" value="com.bitopi.mdm" />
                   <option name="mobileSdkAppId" value="1:374512621165:android:bdff46f35da28d169dd164" />
                   <option name="projectId" value="bitopimdm" />
                   <option name="projectNumber" value="374512621165" />

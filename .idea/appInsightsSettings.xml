@@ -24,9 +24,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.uztech.phonelock" />
-                  <option name="mobileSdkAppId" value="1:545723807856:android:4c513f5abcf57a67251cb5" />
-                  <option name="projectId" value="locker-app-df892" />
-                  <option name="projectNumber" value="545723807856" />
+                  <option name="mobileSdkAppId" value="1:374512621165:android:bdff46f35da28d169dd164" />
+                  <option name="projectId" value="bitopimdm" />
+                  <option name="projectNumber" value="374512621165" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

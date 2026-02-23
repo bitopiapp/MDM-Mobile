@@ -31,7 +31,7 @@ class ScreenMonitorService : Service() {
                 Intent.ACTION_SCREEN_OFF -> {
                     setLocked(true)
                     val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-                    val admin = ComponentName(context, LockDeviceAdminReceiver::class.java)
+                    val admin = ComponentName(context, DeviceAdminReceiver::class.java)
                     if (dpm.isAdminActive(admin)) {
                         dpm.lockNow()
                     }

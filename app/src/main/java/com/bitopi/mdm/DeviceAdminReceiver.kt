@@ -3,6 +3,8 @@ package com.bitopi.mdm
 import android.app.admin.DeviceAdminReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.os.PersistableBundle
 import android.util.Log
 import android.widget.Toast
 
@@ -40,6 +42,29 @@ class DeviceAdminReceiver : DeviceAdminReceiver() {
     override fun onProfileProvisioningComplete(context: Context, intent: Intent) {
         super.onProfileProvisioningComplete(context, intent)
         Log.d(TAG, "✅ Device owner provisioning complete")
-        Toast.makeText(context, "Device owner enabled!", Toast.LENGTH_LONG).show()
+
+        // Read admin extras bundle from QR payload
+        val extras: PersistableBundle? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+            intent.getParcelableExtra("android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE")
+        } else null
+
+        val serverUrl = extras?.getString("server_url")
+        val adminId   = extras?.getString("admin_id")
+
+        Log.d(TAG, "QR extras — server_url=$serverUrl  admin_id=$adminId")
+
+        // Persist so MainActivity can use them
+        context.getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .apply {
+                serverUrl?.let { putString("server_url", it) }
+                adminId?.let   { putString("admin_id", it) }
+                apply()
+            }
+
+        val launchIntent = Intent(context, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
+        context.startActivity(launchIntent)
     }
 }

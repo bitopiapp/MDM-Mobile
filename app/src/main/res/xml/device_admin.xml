@@ -20,8 +20,6 @@
 
         <!-- For Android 8.0+ -->
         <set-user-restrictions />
-        <set-cross-profile-calendar-policy />
-        <set-cross-profile-contacts-policy />
 
         <!-- For password reset -->
         <set-keyguard-features />

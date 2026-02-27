@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "374512621165",
-    "project_id": "bitopimdm",
-    "storage_bucket": "bitopimdm.firebasestorage.app"
+    "project_number": "834472982028",
+    "project_id": "bitopi-mdm",
+    "storage_bucket": "bitopi-mdm.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:374512621165:android:750367a6a6dde7669dd164",
+        "mobilesdk_app_id": "1:834472982028:android:8797d7216b53d1bec7e029",
         "android_client_info": {
           "package_name": "com.bitopi.mdm"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBj_MSAz-pJI5srL_KyrdcUFFR98k3DKgc"
+          "current_key": "AIzaSyAl58301YLix2vKTEseBzAHPkpdE8oYr2w"
         }
       ],
       "services": {
@@ -26,15 +26,15 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:374512621165:android:bdff46f35da28d169dd164",
+        "mobilesdk_app_id": "1:834472982028:android:35577478b1c910d9c7e029",
         "android_client_info": {
-          "package_name": "com.uztech.phonelock"
+          "package_name": "com.bitopibd.mdm"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBj_MSAz-pJI5srL_KyrdcUFFR98k3DKgc"
+          "current_key": "AIzaSyAl58301YLix2vKTEseBzAHPkpdE8oYr2w"
         }
       ],
       "services": {

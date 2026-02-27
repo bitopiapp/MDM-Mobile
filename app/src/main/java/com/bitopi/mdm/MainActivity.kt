@@ -355,7 +355,7 @@ class MainActivity : AppCompatActivity() {
 //
 //                sendPostRequest(registerUrl)
 
-                val serverUrl = prefs.getString("server_url", "https://mdm.juimart.com") ?: "https://mdm.juimart.com"
+                val serverUrl = prefs.getString("server_url", "https://uztech.juimart.com") ?: "https://uztech.juimart.com"
                 val adminId  = prefs.getString("admin_id", "0") ?: "0"
                 val registerUrl = "$serverUrl/create-device?name=Employee - ${Build.MANUFACTURER}-$deviceId&adminId=$adminId&deviceToken=$token"
                 Log.d("RequestURL", "Register URL: $registerUrl")

@@ -105,8 +105,12 @@ class MainActivity : AppCompatActivity() {
 //            disableKioskMode()
 //        }
 
-        findViewById<Button>(R.id.permissionforChrom).setOnClickListener {
+        findViewById<Button>(R.id.permissionforPPC).setOnClickListener {
             openChromeOnly()
+        }
+
+        findViewById<Button>(R.id.permissionforvistaQ).setOnClickListener {
+            vistaQ()
         }
 
         startForegroundServiceForFCM()
@@ -126,7 +130,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openChromeOnly() {
         try {
-            val chromePackage = "com.android.chrome"
+            val chromePackage = "com.garmentsfactory.fabric_inspection_app"
             val chromeIntent = packageManager.getLaunchIntentForPackage(chromePackage)
 
             if (chromeIntent != null) {
@@ -137,6 +141,22 @@ class MainActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             Toast.makeText(this, "Cannot open Chrome", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun vistaQ() {
+        try {
+            val vistaQPackage = "com.tvl.qmsmg"
+            val vistaQIntent = packageManager.getLaunchIntentForPackage(vistaQPackage)
+
+            if (vistaQIntent != null) {
+                vistaQIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(vistaQIntent)
+            } else {
+                Toast.makeText(this, "VistaQ not installed", Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Cannot open VistaQ", Toast.LENGTH_SHORT).show()
         }
     }
 

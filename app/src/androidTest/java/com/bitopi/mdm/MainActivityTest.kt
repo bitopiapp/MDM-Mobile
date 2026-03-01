@@ -65,6 +65,6 @@ class MainActivityTest {
 
     @Test
     fun testLaunchApplicationButtonVisible() {
-        onView(withId(R.id.permissionforChrom)).check(matches(isDisplayed()))
+        onView(withId(R.id.permissionforPPC)).check(matches(isDisplayed()))
     }
 }

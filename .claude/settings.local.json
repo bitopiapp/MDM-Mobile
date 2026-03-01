@@ -1,7 +1,38 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"C:\\\\Users\\\\u.biswas\\\\StudioProjects\\\\Phone-Lock\\\\gradlew.bat\" -p \"C:\\\\Users\\\\u.biswas\\\\StudioProjects\\\\Phone-Lock\" assembleDebug)"
+      "Bash(\"C:\\\\Users\\\\u.biswas\\\\StudioProjects\\\\Phone-Lock\\\\gradlew.bat\" -p \"C:\\\\Users\\\\u.biswas\\\\StudioProjects\\\\Phone-Lock\" assembleDebug)",
+      "Bash(keytool:*)",
+      "Bash(\"$KEYTOOL\":*)",
+      "Bash(\"C:/Users/u.biswas/AppData/Local/Android/Sdk/build-tools/36.0.0/apksigner\" verify:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(python3:*)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(adb devices:*)",
+      "Bash(\"C:/Users/u.biswas/AppData/Local/Android/Sdk/emulator/emulator.exe\":*)",
+      "Bash(\"C:/Users/u.biswas/AppData/Local/Android/Sdk/platform-tools/adb.exe\" devices:*)",
+      "Bash(\"C:/Users/u.biswas/AppData/Local/Android/Sdk/platform-tools/adb.exe\":*)",
+      "Bash(\"$ADB\":*)",
+      "Bash(export:*)",
+      "Bash(\"$ADB\" wait-for-device:*)",
+      "Bash(\"$ADB\" install:*)",
+      "Bash(\"$ADB\" shell:*)",
+      "Bash(__NEW_LINE_58859b8c68f8b7e4__ echo:*)",
+      "Bash(\"$ADB\" logcat:*)",
+      "Bash(__NEW_LINE_0ba31a7652ebd31f__:*)",
+      "Bash(\"$ADB\" devices:*)",
+      "Bash(taskkill:*)",
+      "Bash(ls:*)",
+      "Bash(cmd:*)",
+      "Bash(\"C:/Users/u.biswas/AppData/Local/Android/Sdk/build-tools/36.0.0/apksigner.bat\" verify:*)",
+      "Bash(./gradlew assembleRelease:*)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" ./gradlew assembleRelease:*)",
+      "Bash(\"$JAVA_HOME/bin/keytool\":*)",
+      "Bash(cp:*)",
+      "WebSearch",
+      "Bash(JAVA_HOME=\"C:/Program Files/Android/Android Studio/jbr\" ./gradlew assembleRelease:*)"
     ]
   }
 }

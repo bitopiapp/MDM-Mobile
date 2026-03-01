@@ -84,6 +84,21 @@
             </intent-filter>
         </activity>
 
+        <!-- Provisioning Activity (Android 10+ QR provisioning contract) -->
+        <activity
+            android:name=".ProvisioningActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.app.action.GET_PROVISIONING_MODE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.app.action.ADMIN_POLICY_COMPLIANCE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <!-- Lock Activity -->
         <activity
             android:name=".LockActivity"
@@ -109,22 +124,7 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_DISABLE_REQUESTED" />
                 <action android:name="android.app.action.DEVICE_OWNER_CHANGED" />
                 <action android:name="android.app.action.PROFILE_PROVISIONING_COMPLETE" />
-            </intent-filter>
-        </receiver>
-
-        <!-- Lock Device Admin Receiver -->
-        <receiver
-            android:name=".LockDeviceAdminReceiver"
-            android:exported="true"
-            android:permission="android.permission.BIND_DEVICE_ADMIN">
-
-            <meta-data
-                android:name="android.app.device_admin"
-                android:resource="@xml/device_admin_lock" />
-
-            <intent-filter>
-                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
-                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
+                <action android:name="android.app.action.PROVISION_MANAGED_DEVICE" />
             </intent-filter>
         </receiver>
 
@@ -211,9 +211,9 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Important for device owner apps -->
+        <!-- Required for Device Owner QR provisioning -->
         <meta-data
-            android:name="android.app.managed_profile"
+            android:name="android.app.device_owner"
             android:value="true" />
 
     </application>

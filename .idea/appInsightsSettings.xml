@@ -24,9 +24,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.bitopi.mdm" />
-                  <option name="mobileSdkAppId" value="1:374512621165:android:750367a6a6dde7669dd164" />
-                  <option name="projectId" value="bitopimdm" />
-                  <option name="projectNumber" value="374512621165" />
+                  <option name="mobileSdkAppId" value="1:834472982028:android:8797d7216b53d1bec7e029" />
+                  <option name="projectId" value="bitopi-mdm" />
+                  <option name="projectNumber" value="834472982028" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

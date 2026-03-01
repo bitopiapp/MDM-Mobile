@@ -4,7 +4,7 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.uztech.phonelock",
+  "applicationId": "com.bitopi.mdm",
   "variantName": "release",
   "elements": [
     {

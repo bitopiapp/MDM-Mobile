@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
         const val OVERLAY_PERMISSION_REQUEST = 102
 
         private const val FCM_LOG_TAG = "FCM_MAIN"
-        private const val FRP_GOOGLE_ACCOUNT = "uzzal.biswas.cse@gmail.com"
+        private const val FRP_GOOGLE_ACCOUNT = "bitopitabs@gmail.com"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -216,11 +216,17 @@ class MainActivity : AppCompatActivity() {
             title?.contains("show-message") == true  -> {
                 Log.d(FCM_LOG_TAG, "SHOW MESSAGE command found")
                 runOnUiThread {
+                    val message = body.replace("show message", "", ignoreCase = true).trim()
                     AlertDialog.Builder(this)
                         .setTitle("Notice")
-                        .setMessage(body.replace("show message", "", ignoreCase = true).trim())
+                        .setMessage(message)
                         .setCancelable(false)
-                        .setPositiveButton("OK", null)
+                        .setPositiveButton("OK") { _, _ ->
+                            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            val clip = android.content.ClipData.newPlainText("message", message)
+                            clipboard.setPrimaryClip(clip)
+                            Toast.makeText(this, "Message copied", Toast.LENGTH_SHORT).show()
+                        }
                         .show()
                 }
             }
@@ -370,22 +376,13 @@ class MainActivity : AppCompatActivity() {
     private fun sendRegistrationData(deviceId: String, token: String) {
         Thread {
             try {
-//                val registerUrl = "https://ephonelocker.info/api/register?imei_number=$deviceId&name=${Build.MANUFACTURER} ${Build.MODEL}&phone=01700000009&email=$deviceId@example.com&address=Dhaka, Bangladesh&nominee_name=Nominee Name&nominee_phone=01800000009&total_amount=50000&down_payment=10000&interval_type=1&interval_value=6&payable_amount=40000&per_installment=3333.33&bill_date=2025-01-15&admin_id=2"
-//                Log.d("RequestURL", "Register URL: $registerUrl")
-//
-//                sendPostRequest(registerUrl)
-
+               // val serverUrl = prefs.getString("server_url", "http://192.168.10.90:3013") ?: "http://192.168.10.90:3013"
                 val serverUrl = prefs.getString("server_url", "https://uztech.juimart.com") ?: "https://uztech.juimart.com"
                 val adminId  = prefs.getString("admin_id", "0") ?: "0"
                 val registerUrl = "$serverUrl/create-device?name=Employee - ${Build.MANUFACTURER}-$deviceId&adminId=$adminId&deviceToken=$token"
                 Log.d("RequestURL", "Register URL: $registerUrl")
 
                 sendPostRequest(registerUrl)
-
-//                val tokenUrl = "https://ephonelocker.info/api/save-firebase-token?token=$token&imei=$deviceId"
-//                Log.d("RequestURL", "Token URL: $tokenUrl")
-//
-//                sendPostRequest(tokenUrl)
 
             } catch (e: Exception) {
                 Log.e("Registration", "Error: ${e.message}")
@@ -421,7 +418,12 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 if (responseCode == 200) {
                     Toast.makeText(this, "Server request successful", Toast.LENGTH_SHORT).show()
-                } else {
+                } else if(responseCode == 201){
+                    AlertDialog.Builder(this)
+                        .setTitle("Device Registration successful")
+                        .setMessage("").show()
+                }
+                else {
                     Toast.makeText(this, "Server returned: $responseCode", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -462,7 +464,7 @@ class MainActivity : AppCompatActivity() {
         if (isDeviceOwner()) {
             try {
              //   dpm.setLockTaskPackages(adminComponent, arrayOf(packageName))
-                dpm.setLockTaskPackages(adminComponent, arrayOf(packageName, "com.garmentsfactory.fabric_inspection_app"))
+                dpm.setLockTaskPackages(adminComponent, arrayOf(packageName, "com.garmentsfactory.fabric_inspection_app", "com.tvl.qmsmg"))
                 startLockTask()
                 isTouchLocked = true
                 saveLockState(true)

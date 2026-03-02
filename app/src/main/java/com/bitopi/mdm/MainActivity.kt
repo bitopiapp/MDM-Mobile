@@ -421,7 +421,7 @@ class MainActivity : AppCompatActivity() {
                 } else if(responseCode == 201){
                     AlertDialog.Builder(this)
                         .setTitle("Device Registration successful")
-                        .setMessage("").show()
+                        .setMessage(responseCode).show()
                 }
                 else {
                     Toast.makeText(this, "Server returned: $responseCode", Toast.LENGTH_SHORT).show()

@@ -32,7 +32,10 @@
       "Bash(\"$JAVA_HOME/bin/keytool\":*)",
       "Bash(cp:*)",
       "WebSearch",
-      "Bash(JAVA_HOME=\"C:/Program Files/Android/Android Studio/jbr\" ./gradlew assembleRelease:*)"
+      "Bash(JAVA_HOME=\"C:/Program Files/Android/Android Studio/jbr\" ./gradlew assembleRelease:*)",
+      "Bash(xxd -r -p)",
+      "Bash(pip install:*)",
+      "Bash(py:*)"
     ]
   }
 }

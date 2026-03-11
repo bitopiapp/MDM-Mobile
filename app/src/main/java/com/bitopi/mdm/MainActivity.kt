@@ -137,10 +137,10 @@ class MainActivity : AppCompatActivity() {
                 chromeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 startActivity(chromeIntent)
             } else {
-                Toast.makeText(this, "Chrome not installed", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "PPC not installed", Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
-            Toast.makeText(this, "Cannot open Chrome", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Cannot open PPC", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -363,21 +363,14 @@ class MainActivity : AppCompatActivity() {
 
             // Hide the button on success
             findViewById<Button>(R.id.btnGetFcmToken).hide()
-
-            Toast.makeText(
-                this,
-                "Token saved! See full token in Logcat",
-                Toast.LENGTH_LONG
-            ).show()
-
         })
     }
 
     private fun sendRegistrationData(deviceId: String, token: String) {
         Thread {
             try {
-               // val serverUrl = prefs.getString("server_url", "http://192.168.10.90:3013") ?: "http://192.168.10.90:3013"
-                val serverUrl = prefs.getString("server_url", "https://uztech.juimart.com") ?: "https://uztech.juimart.com"
+                val serverUrl = prefs.getString("server_url", "http://192.168.10.90:3013") ?: "http://192.168.10.90:3013"
+                //    val serverUrl = prefs.getString("server_url", "https://uztech.juimart.com") ?: "https://uztech.juimart.com"
                 val adminId  = prefs.getString("admin_id", "0") ?: "0"
                 val registerUrl = "$serverUrl/create-device?name=Employee - ${Build.MANUFACTURER}-$deviceId&adminId=$adminId&deviceToken=$token"
                 Log.d("RequestURL", "Register URL: $registerUrl")
@@ -421,7 +414,7 @@ class MainActivity : AppCompatActivity() {
                 } else if(responseCode == 201){
                     AlertDialog.Builder(this)
                         .setTitle("Device Registration successful")
-                        .setMessage(responseCode).show()
+                        .setMessage("Device registered successfully (code: $responseCode)").show()
                 }
                 else {
                     Toast.makeText(this, "Server returned: $responseCode", Toast.LENGTH_SHORT).show()
